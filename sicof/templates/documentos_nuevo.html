@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left:6px solid #4b4b4b; padding-left:10px;">
+    ➕ Nuevo Documento
+</h2>
+
+<div style="
+    background:white;
+    padding:25px;
+    border-radius:6px;
+    max-width:900px;
+    margin:auto;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+">
+
+<form method="POST">
+
+    <!-- ============================
+         SOLICITANTE
+    ============================= -->
+    <label><strong>Nombre de quien solicita</strong></label>
+    <input type="text" name="solicitante" required
+           style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+
+    <!-- ============================
+         TIPO DE DOCUMENTO
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Tipo de documento</strong></label>
+    <select name="tipo" required
+            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+        <optgroup label="Documentos institucionales (folio DG)">
+            <option value="oficio_dg">Oficio DG</option>
+            <option value="oficio_circular_dg">Oficio-Circular DG</option>
+            <option value="memorandum_circular_dg">Memorándum-Circular DG</option>
+	    <option value="memorandum_dg">Memorándum DG</option>
+            <option value="acuerdo_dg">Acuerdo DG</option>
+        </optgroup>
+
+        <optgroup label="Documentos internos (folio de gerencia)">
+            <option value="oficio_int">Oficio interno</option>
+            <option value="oficio_circular_int">Oficio-Circular interna</option>
+            <option value="memorandum_circular_int">Memorándum-Circular interna</option>
+	    <option value="memorandum_int">Memorándum interno</option>
+            <option value="acuerdo_int">Acuerdo interna</option>
+        </optgroup>
+    </select>
+
+    <!-- ============================
+         NÚMERO AUTOMÁTICO
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Número</strong></label>
+    <input type="text" value="Se generará automáticamente" readonly
+           style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; background:#f5f5f5;">
+
+    <!-- ============================
+         ASUNTO
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Asunto</strong></label>
+    <textarea name="asunto" required
+              style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; height:80px;"></textarea>
+
+    <!-- ============================
+         FECHA
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Fecha</strong></label>
+    <input type="date" name="fecha_recepcion" required
+           style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+
+    <!-- ============================
+         CLASIFICACIÓN
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Clasificación Archivística</strong></label>
+    <select name="clasificacion_id" id="clasificacion" required
+            style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-top:5px; margin-bottom:20px;">
+        <option value="">Seleccione...</option>
+        {% for c in clasificaciones %}
+            <option value="{{ c.id }}">
+                {{ c.codigo }} - {{ c.nombre }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <!-- ============================
+         DATOS DEL EXPEDIENTE
+    ============================= -->
+    <h3 style="margin-top:30px; border-bottom:2px solid #ccc; padding-bottom:5px;">
+        Datos del expediente
+    </h3>
+
+    <label>Consecutivo del expediente</label>
+    <input type="text" name="consecutivo_expediente"
+           style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+
+    <label>Año de apertura</label>
+    <input type="text" name="anio_expediente"
+           style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+
+    <!-- ============================
+         GERENCIA SOLICITANTE
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Gerencia que solicita</strong></label>
+
+    {% if session.get("usuario_gerencia") == "DG" %}
+        <select name="gerencia_solicita" required
+                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            <option value="DG">DG</option>
+        </select>
+    {% else %}
+        <select name="gerencia_solicita" required
+                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            <option value="{{ session['usuario_gerencia'] }}" selected>
+                {{ session['usuario_gerencia'] }}
+            </option>
+        </select>
+    {% endif %}
+
+    <!-- ============================
+         OBSERVACIONES
+    ============================= -->
+    <label style="margin-top:20px;"><strong>Observaciones</strong></label>
+    <textarea name="observaciones"
+              style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; height:80px;"></textarea>
+
+    <!-- ============================
+         BOTONES
+    ============================= -->
+    <div style="margin-top:30px; display:flex; gap:15px;">
+        <button type="submit" 
+                style="flex:1; background:#4b4b4b; color:white; padding:10px; border:none; border-radius:4px; font-weight:bold;">
+            Guardar
+        </button>
+
+        <a href="/documentos"
+           style="flex:1; background:#777; color:white; padding:10px; text-align:center; border-radius:4px; text-decoration:none;">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+{% endblock %}
+
+

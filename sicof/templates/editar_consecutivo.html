@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left: 6px solid #4b4b4b; padding-left: 10px;">
+    ✏️ Editar consecutivo
+</h2>
+
+<div style="background:white; padding:25px; border-radius:6px; max-width:600px; margin:auto;">
+
+<form method="POST">
+
+    <!-- Número actual (informativo: no lo modifica esta ruta) -->
+    <label class="fw-bold">Último número asignado</label>
+    <input type="text" value="{{ cons.numero }}" disabled>
+    <small style="color:#666;">
+        Para corregir el número usa la pantalla de Configuración.
+    </small>
+
+    <!-- Gerencia -->
+    <label class="fw-bold" style="margin-top:15px; display:block;">Gerencia</label>
+    <select name="gerencia" required>
+        {% for g in ["GAL", "GAF", "GSTS", "GSPOI", "GSMA", "DG", "GLOBAL"] %}
+            <option value="{{ g }}" {% if cons.gerencia == g %}selected{% endif %}>{{ g }}</option>
+        {% endfor %}
+    </select>
+
+    <!-- Tipo de documento -->
+    <label class="fw-bold">Tipo de documento</label>
+    <select name="tipo" required>
+        {% for t in [
+            "oficio_int", "oficio_circular_int", "memorandum_int",
+            "memorandum_circular_int", "acuerdo_int",
+            "oficio_dg", "oficio_circular_dg", "memorandum_dg",
+            "memorandum_circular_dg", "acuerdo_dg"
+        ] %}
+            <option value="{{ t }}" {% if cons.tipo == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+
+    <!-- Año -->
+    <label class="fw-bold">Año</label>
+    <input type="number" name="anio" value="{{ cons.anio }}" min="2000" max="2100" required>
+
+    <!-- Botones -->
+    <div style="margin-top:25px; display:flex; gap:15px;">
+        <button type="submit" style="flex:1;">Guardar cambios</button>
+        <a href="/consecutivos" style="flex:1; background:#777; color:white; padding:10px; text-align:center; border-radius:4px; text-decoration:none;">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+{% endblock %}

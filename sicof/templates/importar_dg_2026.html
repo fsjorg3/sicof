@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Importar Base Dirección General 2026</h2>
+
+    <!-- MENSAJES FLASH -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="padding:10px; margin-bottom:15px; border-radius:4px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="/importar_dg_2026" method="POST" enctype="multipart/form-data" class="border p-4 rounded bg-light">
+
+        <div class="mb-3">
+            <label class="form-label"><strong>Selecciona el archivo Excel (.xlsx)</strong></label>
+            <input type="file" name="archivo" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Importar Archivo</button>
+    </form>
+</div>
+{% endblock %}
+
+
+

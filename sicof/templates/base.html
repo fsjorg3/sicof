@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SICOF | SOAPAP</title>
+
+    <style>
+        /* ============================
+           PALETA INSTITUCIONAL SOAPAP
+           ============================ */
+        :root {
+            --cool-gray-10: #636569;
+            --pantone-7527: #D6D1C4;
+            --pantone-453: #C2BA98;
+            --pantone-7421: #691C32;
+
+            --sasg-100: #C0B8AC;
+            --sasg-60: #DAD5CE;
+            --sasg-30: #EEEBE7;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--pantone-7527);
+            margin: 0;
+        }
+
+        /* ============================
+           BARRA INSTITUCIONAL SUPERIOR
+           ============================ */
+        .navbar {
+            background-color: var(--cool-gray-10);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar .titulo {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .navbar a {
+            color: white;
+            margin-left: 15px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+
+        /* ============================
+           MENÚ DINÁMICO
+           ============================ */
+        .menu {
+            background: var(--sasg-60);
+            padding: 12px 20px;
+            display: flex;
+            gap: 25px;
+            font-weight: bold;
+        }
+
+        .menu a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .menu a:hover {
+            color: var(--pantone-7421);
+        }
+
+        /* ============================
+           CONTENEDOR PRINCIPAL
+           ============================ */
+        .contenedor {
+            background: var(--sasg-30);
+            width: 90%;
+            margin: 25px auto;
+            padding: 25px;
+            border-radius: 6px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+        }
+
+        /* ============================
+           TÍTULOS
+           ============================ */
+        h2, h3 {
+            color: var(--cool-gray-10);
+            border-bottom: 2px solid var(--pantone-453);
+            padding-bottom: 5px;
+        }
+
+        /* ============================
+           TABLAS
+           ============================ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th {
+            background-color: var(--sasg-100);
+            padding: 8px;
+            text-align: left;
+            color: #333;
+        }
+
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--sasg-60);
+        }
+
+        table tr:hover {
+            background-color: var(--sasg-30);
+        }
+
+        /* ============================
+           INPUTS
+           ============================ */
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            margin-bottom: 15px;
+            border: 1px solid var(--pantone-453);
+            border-radius: 4px;
+        }
+
+        /* ============================
+           BOTONES
+           ============================ */
+        button {
+            background-color: var(--pantone-7421);
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #4b0f1f;
+        }
+
+        /* ============================
+           BOTÓN EDITAR INSTITUCIONAL
+           ============================ */
+        .btn-editar {
+            background: #ffc107;
+            padding: 5px 8px;
+            border-radius: 4px;
+            color: black;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-editar:hover {
+            background: #e0a800;
+        }
+
+        /* ============================
+           SECCIÓN USUARIOS
+           ============================ */
+        .acciones {
+            display: flex;
+            gap: 8px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Barra institucional -->
+    <div class="navbar">
+        <div class="titulo">Sistema de Turnos de Documentos | SOAPAP</div>
+
+        {% if session.usuario_id %}
+        <div style="display:flex; align-items:center; gap:20px;">
+
+            <span>{{ session.usuario_nombre }} ({{ session.usuario_gerencia }})</span>
+
+            {% if session.get("anio") %}
+            <span style="background: var(--cool-gray-10); padding:6px 12px; border-radius:4px; font-weight:bold;">
+                Año de trabajo: {{ session["anio"] }}
+            </span>
+            {% endif %}
+
+            <a href="/logout">Salir</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- MENÚ DINÁMICO -->
+    {% if session.usuario_id %}
+    <div class="menu">
+        <a href="/documentos">📄 Documentos</a>
+        <a href="/documentos/nuevo">➕ Nuevo</a>
+        <a href="/historial">📚 Historial</a>
+        <a href="/reservados">🔖 Folios Reservados</a>
+
+        {% if session.usuario_rol == "superadmin" %}
+            <a href="/usuarios">👥 Usuarios</a>
+            <a href="/consecutivos">🔢 Consecutivos</a>
+            <a href="/consecutivos_dg">🏛 Consecutivos DG</a>
+            <a href="/importar_dg_2026">📥 Importar Excel</a>
+            <a href="/configuracion">⚙ Configuración</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- CONTENIDO -->
+    <div class="contenedor">
+        {% block content %}{% endblock %}
+    </div>
+
+</body>
+</html>
+
+

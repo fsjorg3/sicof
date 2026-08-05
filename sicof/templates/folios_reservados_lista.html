@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Folios Reservados</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Número</th>
+            <th>Gerencia</th>
+            <th>Año</th>
+            <th>Fecha</th>
+            <th>Asunto</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in documentos %}
+        <tr style="background: var(--sasg-60);">
+            <td>{{ d.tipo }}</td>
+            <td>{{ d.numero }}</td>
+            <td>{{ d.gerencia_solicita }}</td>
+            <td>{{ d.anio }}</td>
+            <td>{{ d.fecha_recepcion }}</td>
+            <td>{{ d.asunto }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="/documentos" class="btn-primario">Volver</a>
+
+{% endblock %}
+
+
+

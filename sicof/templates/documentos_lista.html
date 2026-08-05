@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left:6px solid #4b4b4b; padding-left:10px;">
+    📄 Documentos Registrados
+</h2>
+
+<!-- ================================
+     FILTROS AVANZADOS
+================================ -->
+<div style="
+    background:white;
+    padding:15px;
+    border-radius:6px;
+    box-shadow:0 0 6px rgba(0,0,0,0.1);
+    max-width:1100px;
+    margin:auto;
+    margin-bottom:25px;
+">
+
+<form method="GET" style="display:flex; flex-wrap:wrap; gap:15px;">
+
+    <select name="tipo" style="flex:1; min-width:180px;">
+        <option value="">Tipo</option>
+
+        <optgroup label="Documentos DG">
+            <option value="oficio_dg">Oficio DG</option>
+            <option value="oficio_circular_dg">Oficio-Circular DG</option>
+            <option value="memorandum_circular_dg">Memorándum-Circular DG</option>
+            <option value="memorandum_dg">Memorándum DG</option>
+            <option value="acuerdo_dg">Acuerdo DG</option>
+        </optgroup>
+
+        <optgroup label="Documentos internos">
+            <option value="oficio_int">Oficio interno</option>
+            <option value="oficio_circular_int">Oficio-Circular interna</option>
+            <option value="memorandum_circular_int">Memorándum-Circular interna</option>
+            <option value="memorandum_int">Memorándum interno</option>
+            <option value="acuerdo_int">Acuerdo interna</option>
+        </optgroup>
+    </select>
+
+    <select name="gerencia" style="flex:1; min-width:180px;">
+        <option value="">Gerencia solicitante</option>
+        <option value="GAL">GAL</option>
+        <option value="GAF">GAF</option>
+        <option value="GSTS">GSTS</option>
+        <option value="GSPOI">GSPOI</option>
+        <option value="GSMA">GSMA</option>
+        <option value="DG">DG</option>
+    </select>
+
+    <input type="number" name="anio" placeholder="Año" style="flex:1; min-width:150px;">
+
+    <button type="submit" style="background:#4b4b4b; color:white; padding:10px 15px; border:none; border-radius:4px;">
+        🔍 Filtrar
+    </button>
+
+</form>
+
+</div>
+
+<!-- ================================
+     TABLA DE DOCUMENTOS
+================================ -->
+<table class="tabla-documentos">
+    <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Solicitante</th>
+            <th>Gerencia</th>
+            <th>Número</th>
+            <th>Asunto</th>
+            <th>Fecha</th>
+            <th>Clasificación</th>
+            <th>Código expediente</th>
+            <th>Estatus</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for d in documentos %}
+        <tr>
+
+            <!-- Tipo -->
+            <td>
+                {% if d.tipo.endswith("_dg") %}
+                    <strong>DG</strong> – {{ d.tipo.replace("_dg","").capitalize() }}
+                {% else %}
+                    Interno – {{ d.tipo.replace("_int","").capitalize() }}
+                {% endif %}
+            </td>
+
+            <td>{{ d.solicitante }}</td>
+            <td>{{ d.gerencia_solicita }}</td>
+            <td class="numero-oficio">{{ d.numero }}</td>
+            <td>{{ d.asunto }}</td>
+            <td>{{ d.fecha_recepcion }}</td>
+
+            <td>
+                {{ d.clasificacion.codigo }}<br>
+                <span class="clasificacion-nombre">{{ d.clasificacion.nombre }}</span>
+            </td>
+
+            <td class="expediente">{{ d.codigo_expediente }}</td>
+
+            <!-- Estatus -->
+            <td>
+                {% if d.estatus == "reservado" %}
+                    <span class="estatus estatus-pendiente">Reservado</span>
+                {% elif d.estatus == "cancelado" %}
+                    <span class="estatus" style="background:red;">Cancelado</span>
+                {% else %}
+                    <span class="estatus estatus-normal">Normal</span>
+                {% endif %}
+            </td>
+
+            <!-- ACCIONES -->
+            <td class="acciones">
+
+                <!-- Ver detalle -->
+                <a href="/documentos/{{ d.id }}" class="btn-editar" style="background:#C0B8AC;">
+                    👁 Ver
+                </a>
+
+                <!-- Editar documento (solo superadmin) -->
+                {% if session.usuario_rol == "superadmin" %}
+                <a href="/editar_documento/{{ d.id }}" class="btn-editar">
+                    ✏ Editar
+                </a>
+                {% endif %}
+
+                <!-- Usar folio reservado -->
+                {% if d.estatus == "reservado" %}
+                <a href="/usar_reservado/{{ d.id }}" class="btn-reservado">
+                    Usar folio
+                </a>
+                {% endif %}
+
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<style>
+    .tabla-documentos {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        table-layout: fixed;
+    }
+
+    .tabla-documentos th {
+        background: #4b4b4b;
+        color: white;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .tabla-documentos td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        vertical-align: top;
+    }
+
+    .numero-oficio {
+        font-weight: bold;
+        color: #003366;
+    }
+
+    .expediente {
+        font-size: 13px;
+        color: #444;
+        word-break: break-word;
+    }
+
+    .clasificacion-nombre {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .estatus {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        color: white;
+        display: inline-block;
+    }
+
+    .estatus-normal {
+        background: #28a745;
+    }
+
+    .estatus-pendiente {
+        background: #ffc107;
+        color: black;
+    }
+
+    .btn-reservado {
+        background: #ffc107;
+        padding: 5px 8px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: black;
+        font-size: 12px;
+    }
+
+    .btn-editar {
+        background: #ffc107;
+        padding: 5px 8px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: black;
+        font-size: 12px;
+        font-weight: bold;
+        margin-right: 5px;
+    }
+
+    .sin-acciones {
+        color: #999;
+    }
+</style>
+
+{% endblock %}
+

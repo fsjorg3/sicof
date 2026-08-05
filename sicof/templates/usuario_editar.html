@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="titulo-seccion">
+    ✏️ Editar usuario
+</h2>
+
+<div class="contenedor-interno">
+
+<form method="POST">
+
+    <!-- Usuario -->
+    <label class="fw-bold">Usuario</label>
+    <input type="text" name="nombre" value="{{ u.nombre }}" required>
+
+    <!-- Rol -->
+    <label class="fw-bold">Rol</label>
+    <select name="rol" id="rol" required>
+        <option value="admin" {% if u.rol=="admin" %}selected{% endif %}>Administrador</option>
+        <option value="gerencia" {% if u.rol=="gerencia" %}selected{% endif %}>Gerencia</option>
+        <option value="superadmin" {% if u.rol=="superadmin" %}selected{% endif %}>Superadmin</option>
+    </select>
+
+    <!-- Gerencia (solo si rol = gerencia) -->
+    <div id="divGerencia" style="display:{{ 'block' if u.rol=='gerencia' else 'none' }}; margin-top:10px;">
+        <label class="fw-bold">Gerencia</label>
+        <select name="gerencia">
+            <option value="GAL" {% if u.gerencia=='GAL' %}selected{% endif %}>GAL</option>
+            <option value="GAF" {% if u.gerencia=='GAF' %}selected{% endif %}>GAF</option>
+            <option value="GSTS" {% if u.gerencia=='GSTS' %}selected{% endif %}>GSTS</option>
+            <option value="GSPOI" {% if u.gerencia=='GSPOI' %}selected{% endif %}>GSPOI</option>
+            <option value="GSMA" {% if u.gerencia=='GSMA' %}selected{% endif %}>GSMA</option>
+        </select>
+    </div>
+
+    <!-- Botones -->
+    <div class="acciones" style="margin-top:25px;">
+        <button type="submit" class="btn-primario" style="flex:1;">
+            Guardar cambios
+        </button>
+
+        <a href="/usuarios" class="btn-cancelar" style="flex:1;">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+<script>
+document.getElementById("rol").addEventListener("change", function() {
+    document.getElementById("divGerencia").style.display =
+        this.value === "gerencia" ? "block" : "none";
+});
+</script>
+
+{% endblock %}
+
+

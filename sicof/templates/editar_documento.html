@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Editar Documento</h3>
+
+    <form method="POST">
+
+        <div class="mb-3">
+            <label class="form-label">Número institucional</label>
+            <input type="text" class="form-control" value="{{ doc.numero }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Asunto</label>
+            <textarea name="asunto" class="form-control" rows="3">{{ doc.asunto }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Solicitante (Responsable)</label>
+            <input type="text" name="solicitante" class="form-control" value="{{ doc.solicitante }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Gerencia que solicita</label>
+            <input type="text" name="gerencia_solicita" class="form-control" value="{{ doc.gerencia_solicita }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fecha de recepción</label>
+            <input type="date" name="fecha_recepcion" class="form-control" value="{{ doc.fecha_recepcion }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="3">{{ doc.observaciones }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Estatus</label>
+            <select name="estatus" class="form-select">
+                <option value="registrado" {% if doc.estatus == "registrado" %}selected{% endif %}>Registrado</option>
+                <option value="cancelado" {% if doc.estatus == "cancelado" %}selected{% endif %}>Cancelado</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary">Guardar cambios</button>
+        <a href="/documentos" class="btn btn-secondary">Cancelar</a>
+
+    </form>
+</div>
+
+{% endblock %}
+
+

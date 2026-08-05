@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left: 6px solid #4b4b4b; padding-left: 10px;">
+    ➕ Crear usuario
+</h2>
+
+<div style="background:white; padding:25px; border-radius:6px; max-width:600px; margin:auto;">
+
+<form method="POST">
+
+    <!-- Usuario -->
+    <label class="fw-bold">Usuario</label>
+    <input type="text" name="nombre" required>
+
+    <!-- Contraseña -->
+    <label class="fw-bold">Contraseña</label>
+    <input type="password" name="password" required>
+
+    <!-- Confirmar contraseña -->
+    <label class="fw-bold">Confirmar contraseña</label>
+    <input type="password" name="confirmar" required>
+
+    <!-- Rol -->
+    <label class="fw-bold">Rol</label>
+    <select name="rol" id="rol" required>
+        <option value="admin">Administrador</option>
+        <option value="gerencia">Gerencia</option>
+        <option value="superadmin">Superadmin</option>
+    </select>
+
+    <!-- Gerencia (solo si rol = gerencia) -->
+    <div id="divGerencia" style="display:none; margin-top:10px;">
+        <label class="fw-bold">Gerencia</label>
+        <select name="gerencia">
+            <option value="GAL">GAL</option>
+            <option value="GAF">GAF</option>
+            <option value="GSTS">GSTS</option>
+            <option value="GSPOI">GSPOI</option>
+            <option value="GSMA">GSMA</option>
+        </select>
+    </div>
+
+    <!-- Botones -->
+    <div style="margin-top:25px; display:flex; gap:15px;">
+        <button type="submit" style="flex:1;">Guardar</button>
+        <a href="/usuarios" style="flex:1; background:#777; color:white; padding:10px; text-align:center; border-radius:4px; text-decoration:none;">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+<script>
+document.getElementById("rol").addEventListener("change", function() {
+    document.getElementById("divGerencia").style.display =
+        this.value === "gerencia" ? "block" : "none";
+});
+</script>
+
+{% endblock %}
+
+

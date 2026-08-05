@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="titulo-seccion">
+    👥 Usuarios del sistema
+</h2>
+
+<!-- Botón crear usuario -->
+<div class="acciones-superior">
+    <a class="btn-primario" href="/usuarios/nuevo">
+        ➕ Crear usuario
+    </a>
+</div>
+
+<!-- CONTENEDOR CENTRAL -->
+<div class="contenedor-interno">
+
+    <table class="tabla-usuarios">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Gerencia</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+
+                <!-- Usuario -->
+                <td class="col-usuario">
+                    {{ u.nombre }}
+                </td>
+
+                <!-- Rol -->
+                <td>
+                    {% if u.rol == "superadmin" %}
+                        <span class="badge-superadmin">Superadmin</span>
+                    {% elif u.rol == "admin" %}
+                        <span class="badge-admin">Administrador</span>
+                    {% else %}
+                        <span class="badge-gerencia">Gerencia</span>
+                    {% endif %}
+                </td>
+
+                <!-- Gerencia -->
+                <td>
+                    {{ u.gerencia if u.gerencia else "-" }}
+                </td>
+
+                <!-- Activo -->
+                <td>
+                    {% if u.activo %}
+                        <span class="badge-activo">✔</span>
+                    {% else %}
+                        <span class="badge-inactivo">✖</span>
+                    {% endif %}
+                </td>
+
+                <!-- Acciones -->
+                <td>
+                    <div class="acciones">
+                        <a class="btn-editar" href="/usuarios/editar/{{ u.id }}">✏️ Editar</a>
+
+                        {% if u.activo %}
+                            <a class="btn-bloquear" href="/usuarios/bloquear/{{ u.id }}">⛔ Bloquear</a>
+                        {% else %}
+                            <a class="btn-activar" href="/usuarios/activar/{{ u.id }}">✔ Activar</a>
+                        {% endif %}
+                    </div>
+                </td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+

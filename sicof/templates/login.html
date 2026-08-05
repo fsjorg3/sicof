@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="
+    background:white;
+    padding:30px;
+    max-width:420px;
+    margin:40px auto;
+    border-radius:6px;
+    box-shadow:0 0 10px rgba(0,0,0,0.15);
+">
+
+    <h2 style="
+        text-align:center;
+        color:#4b4b4b;
+        margin-bottom:25px;
+        border-bottom:2px solid #ccc;
+        padding-bottom:8px;
+    ">
+        Acceso al Sistema
+    </h2>
+
+    <form method="POST">
+
+        <label style="font-weight:bold; color:#333;">Usuario</label>
+        <input type="text" name="nombre" required
+               style="width:100%; padding:10px; border:1px solid #bbb; border-radius:4px;">
+
+        <label style="font-weight:bold; color:#333;">Contraseña</label>
+        <input type="password" name="password" required
+               style="width:100%; padding:10px; border:1px solid #bbb; border-radius:4px;">
+
+        <label style="font-weight:bold; color:#333;">Año de trabajo</label>
+        <select name="anio" required
+                style="width:100%; padding:10px; border:1px solid #bbb; border-radius:4px;">
+            {% for a in range(2026, 2037) %}
+                <option value="{{ a }}">{{ a }}</option>
+            {% endfor %}
+        </select>
+
+        {% if error %}
+        <p style="color:#b30000; font-weight:bold; margin-top:10px;">
+            {{ error }}
+        </p>
+        {% endif %}
+
+        <button style="
+            width:100%;
+            margin-top:20px;
+            background-color:#4b4b4b;
+            color:white;
+            padding:12px;
+            border:none;
+            border-radius:4px;
+            font-weight:bold;
+            cursor:pointer;
+        ">
+            Ingresar
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

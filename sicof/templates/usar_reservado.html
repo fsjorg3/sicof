@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left: 6px solid #4b4b4b; padding-left: 10px;">
+    🔖 Usar folio reservado
+</h2>
+
+<div style="background:white; padding:25px; border-radius:6px; max-width:700px; margin:auto;">
+
+    <!-- El folio ya está asignado: completar los datos no consume un consecutivo nuevo -->
+    <div style="background:#EEEBE7; padding:15px; border-radius:4px; margin-bottom:20px;">
+        <strong>Folio:</strong> {{ doc.numero }}<br>
+        <strong>Tipo:</strong> {{ doc.tipo }}<br>
+        <strong>Gerencia:</strong> {{ doc.gerencia_solicita }}
+    </div>
+
+<form method="POST">
+
+    <!-- Asunto -->
+    <label class="fw-bold">Asunto</label>
+    <input type="text" name="asunto" required
+           value="{% if doc.asunto != 'Folio reservado semanal' %}{{ doc.asunto }}{% endif %}">
+
+    <!-- Solicitante -->
+    <label class="fw-bold">Solicitante</label>
+    <input type="text" name="solicitante" required
+           value="{% if doc.solicitante != 'Sistema' %}{{ doc.solicitante }}{% endif %}">
+
+    <!-- Fecha de recepción -->
+    <label class="fw-bold">Fecha de recepción</label>
+    <input type="date" name="fecha_recepcion" value="{{ doc.fecha_recepcion }}" required>
+
+    <!-- Clasificación archivística -->
+    <label class="fw-bold">Clasificación archivística</label>
+    <select name="clasificacion_id" required>
+        <option value="">-- Selecciona una clasificación --</option>
+        {% for c in clasificaciones %}
+            <option value="{{ c.id }}">{{ c.codigo }} — {{ c.nombre }}</option>
+        {% endfor %}
+    </select>
+
+    <!-- Expediente -->
+    <label class="fw-bold">Consecutivo de expediente</label>
+    <input type="text" name="consecutivo_expediente" value="{{ doc.consecutivo_expediente }}" required>
+
+    <label class="fw-bold">Año de expediente</label>
+    <input type="text" name="anio_expediente" value="{{ doc.anio_expediente }}" required>
+
+    <!-- Observaciones -->
+    <label class="fw-bold">Observaciones</label>
+    <textarea name="observaciones" rows="3"></textarea>
+
+    <!-- Botones -->
+    <div style="margin-top:25px; display:flex; gap:15px;">
+        <button type="submit" style="flex:1;">Usar este folio</button>
+        <a href="/documentos" style="flex:1; background:#777; color:white; padding:10px; text-align:center; border-radius:4px; text-decoration:none;">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+{% endblock %}

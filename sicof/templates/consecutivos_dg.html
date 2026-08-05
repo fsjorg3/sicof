@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="titulo-seccion">
+    🏛 Consecutivos de Dirección General
+</h2>
+
+<!-- CONTENEDOR CENTRAL -->
+<div class="contenedor-interno">
+
+    <table class="tabla-usuarios">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Asunto</th>
+                <th>Estatus</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for c in consecutivos %}
+            <tr>
+                <td class="col-usuario">
+                    DG/{{ "%04d"|format(c.numero) }}
+                </td>
+
+                <td>{{ c.fecha if c.fecha else "-" }}</td>
+                <td>{{ c.asunto if c.asunto else "-" }}</td>
+
+                <td>
+                    {% if c.estatus == "cancelado" %}
+                        <span class="badge-inactivo">Cancelado</span>
+                    {% else %}
+                        <span class="badge-activo">Registrado</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <div class="acciones">
+                        <a class="btn-editar" href="/editar_consecutivo_dg/{{ c.id }}">✏️ Editar</a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">Todavía no hay consecutivos DG registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

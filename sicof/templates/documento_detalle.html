@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left:6px solid #4b4b4b; padding-left:10px;">
+    📄 Detalle del Documento
+</h2>
+
+<div style="
+    background:white;
+    padding:25px;
+    border-radius:6px;
+    max-width:900px;
+    margin:auto;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+">
+
+    <!-- ============================
+         INFORMACIÓN GENERAL
+    ============================= -->
+    <h3 style="color:#333; border-bottom:2px solid #ccc; padding-bottom:5px;">
+        Información general
+    </h3>
+
+    <p><strong>Tipo:</strong> {{ d.tipo }}</p>
+    <p><strong>Número:</strong> {{ d.numero }}</p>
+    <p><strong>Solicitante:</strong> {{ d.solicitante }}</p>
+    <p><strong>Gerencia solicitante:</strong> {{ d.gerencia_solicita }}</p>
+    <p><strong>Fecha de recepción:</strong> {{ d.fecha_recepcion }}</p>
+
+    <hr style="margin:25px 0;">
+
+    <!-- ============================
+         CLASIFICACIÓN
+    ============================= -->
+    <h3 style="color:#333; border-bottom:2px solid #ccc; padding-bottom:5px;">
+        Clasificación Archivística
+    </h3>
+
+    <p><strong>Código:</strong> {{ d.clasificacion.codigo }}</p>
+    <p><strong>Nombre:</strong> {{ d.clasificacion.nombre }}</p>
+    <p><strong>Tipo de clasificación:</strong> {{ d.tipo_clasificacion }}</p>
+
+    <hr style="margin:25px 0;">
+
+    <!-- ============================
+         CÓDIGO DEL EXPEDIENTE
+    ============================= -->
+    <h3 style="color:#333; border-bottom:2px solid #ccc; padding-bottom:5px;">
+        Código del expediente
+    </h3>
+
+    <p style="font-size:18px; font-weight:bold;">
+        {{ d.codigo_expediente }}
+    </p>
+
+    <!-- ============================
+         SECCIÓN DESGLOSADA DEL EXPEDIENTE
+    ============================= -->
+    <h3 style="color:#333; border-bottom:2px solid #ccc; padding-bottom:5px; margin-top:25px;">
+        Desglose del expediente
+    </h3>
+
+    <p><strong>Fondo:</strong> SOAPAP</p>
+    <p><strong>Gerencia:</strong> {{ d.gerencia_solicita }}</p>
+    <p><strong>Clasificación:</strong> {{ d.clasificacion.codigo }}</p>
+    <p><strong>Tipo de clasificación:</strong> {{ d.tipo_clasificacion }}</p>
+    <p><strong>Año de apertura:</strong> {{ d.anio_expediente }}</p>
+    <p><strong>Consecutivo:</strong> {{ d.consecutivo_expediente }}</p>
+
+    <hr style="margin:25px 0;">
+
+    <!-- ============================
+         OBSERVACIONES
+    ============================= -->
+    <h3 style="color:#333; border-bottom:2px solid #ccc; padding-bottom:5px;">
+        Observaciones
+    </h3>
+
+    <p>{{ d.observaciones if d.observaciones else "Sin observaciones." }}</p>
+
+</div>
+
+<!-- BOTONES DE ACCIÓN -->
+<div style="max-width:900px; margin:20px auto; display:flex; gap:15px;">
+
+    {% if session.usuario_rol == "superadmin" %}
+    <a href="/editar_documento/{{ d.id }}"
+       style="background:#ffc107; color:black; padding:10px 15px;
+              border-radius:4px; text-decoration:none; font-weight:bold;">
+        ✏ Editar documento
+    </a>
+    {% endif %}
+
+    <a href="/documentos"
+       style="background:#4b4b4b; color:white; padding:10px 15px;
+              border-radius:4px; text-decoration:none; font-weight:bold;">
+        ← Regresar
+    </a>
+</div>
+
+{% endblock %}
+
+

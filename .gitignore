@@ -1,0 +1,23 @@
+# Entorno virtual (recrear con: python -m venv venv)
+venv/
+.venv/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Configuración local con secretos — versionar solo .env.example
+.env
+
+# Base de datos y datos de instancia
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Sesiones en disco (Flask-Session, no usado actualmente)
+flask_session/
+
+# Salidas de los scripts de Excel
+Clasificaci*n_Arch*.xlsx
+!sicof/Clasificaci*n_Arch*.xlsx

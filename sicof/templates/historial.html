@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 style="border-left:6px solid #4b4b4b; padding-left:10px; margin-bottom:20px;">
+    📄 Historial de Documentos
+</h2>
+
+<div style="
+    background:white;
+    padding:25px;
+    border-radius:6px;
+    width:100%;
+    box-shadow:0 0 8px rgba(0,0,0,0.1);
+">
+
+    <table style="
+        width:100%;
+        border-collapse:collapse;
+        font-size:14px;
+    ">
+        <thead>
+            <tr style="background:#4b4b4b; color:white;">
+                <th style="padding:10px;">Tipo</th>
+                <th style="padding:10px;">Solicitante</th>
+                <th style="padding:10px;">Gerencia solicitante</th>
+                <th style="padding:10px;">Número</th>
+                <th style="padding:10px;">Asunto</th>
+                <th style="padding:10px;">Fecha</th>
+                <th style="padding:10px;">Clasificación</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for d in documentos %}
+            <tr style="border-bottom:1px solid #ddd;">
+                <td style="padding:8px;">{{ d.tipo }}</td>
+                <td style="padding:8px;">{{ d.solicitante }}</td>
+                <td style="padding:8px;">{{ d.gerencia_solicita }}</td>
+                <td style="padding:8px; font-weight:bold; color:#003366;">
+                    {{ d.numero }}
+                </td>
+                <td style="padding:8px;">{{ d.asunto }}</td>
+                <td style="padding:8px;">{{ d.fecha }}</td>
+                <td style="padding:8px;">{{ d.clasificacion }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}
+
