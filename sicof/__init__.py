@@ -52,6 +52,7 @@ def registrar_comandos(app):
 
     @app.cli.command("generar-reservados")
     def generar_reservados():
+        
         """
         Genera los folios reservados de la semana.
 

@@ -193,7 +193,7 @@ adduser --system --group --home /opt/sicof --shell /usr/sbin/nologin sicof
 El código lo posee `root`; `sicof` lo ejecuta sin poder escribir en él.
 
 ```bash
-git clone https://github.com/adrianalinarestoledo-creator/sicof.git /opt/sicof
+git clone https://github.com/fsjorg3/sicof.git /opt/sicof
 ```
 
 ```bash
@@ -269,11 +269,23 @@ Crea las cinco tablas, el `superadmin`, el usuario `sistema` (no interactivo) y
 la clasificación `00.0`. Es **idempotente** y nunca sobrescribe un superadmin
 existente, así que puede repetirse sin riesgo.
 
-Cargar después el catálogo archivístico:
+Cargar después el catálogo archivístico. **Necesita el mismo prefijo**
+`env $(grep ...)`: fuera de `sicof.service`, systemd no inyecta
+`/etc/sicof/sicof.env` — solo lo hace vía `EnvironmentFile` para el propio
+servicio. Cualquier script suelto ejecutado a mano (este, o mantenimientos
+futuros) debe cargar las variables explícitamente o `create_app()` no
+encuentra `SECRET_KEY` ni `DATABASE_URL` y aborta.
 
 ```bash
-cd /opt/sicof && sudo -u sicof venv/bin/python cargar_clasificaciones.py
+cd /opt/sicof && sudo -u sicof env $(grep -v '^#' /etc/sicof/sicof.env | xargs) venv/bin/python cargar_clasificaciones.py
 ```
+
+> Si algún valor de `sicof.env` llevara espacios, `xargs` lo partiría mal. En
+> ese caso, cargar el archivo con `source` en vez de `xargs`:
+> ```bash
+> set -a && source /etc/sicof/sicof.env && set +a
+> sudo -u sicof -E env "PATH=$PATH" venv/bin/python cargar_clasificaciones.py
+> ```
 
 ---
 

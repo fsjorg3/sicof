@@ -60,7 +60,10 @@ class Documento(db.Model):
     consecutivo = db.Column(db.Integer)
     anio = db.Column(db.Integer)
 
-    asunto = db.Column(db.String(500), nullable=False)
+    # Text, no String(500): correspondencia real puede superar los 500
+    # caracteres (verificado contra datos DG reales, hasta 1138). Truncar el
+    # asunto de un oficio institucional no es aceptable en un sistema de archivo.
+    asunto = db.Column(db.Text, nullable=False)
     fecha_recepcion = db.Column(db.String(20), nullable=False)
     prioridad = db.Column(db.String(20))
     solicitante = db.Column(db.String(200))

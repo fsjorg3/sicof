@@ -21,3 +21,4 @@ flask_session/
 # Salidas de los scripts de Excel
 Clasificaci*n_Arch*.xlsx
 !sicof/Clasificaci*n_Arch*.xlsx
+*.xlsx
