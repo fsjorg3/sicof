@@ -13,6 +13,10 @@ class Usuario(db.Model):
     nombre = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
 
+    # Nombre real de la persona, para sugerir como solicitante en el alta de
+    # folios. Distinto de `nombre`, que es el usuario de login.
+    nombre_completo = db.Column(db.String(200))
+
     # Roles: superadmin, admin, gerencia
     rol = db.Column(db.String(20), nullable=False)
 

@@ -13,6 +13,10 @@
     <label class="fw-bold">Usuario</label>
     <input type="text" name="nombre" value="{{ u.nombre }}" required>
 
+    <!-- Nombre completo -->
+    <label class="fw-bold">Nombre completo</label>
+    <input type="text" name="nombre_completo" value="{{ u.nombre_completo or '' }}">
+
     <!-- Rol -->
     <label class="fw-bold">Rol</label>
     <select name="rol" id="rol" required>

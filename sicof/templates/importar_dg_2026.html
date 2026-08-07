@@ -25,6 +25,45 @@
         <button type="submit" class="btn btn-primary">Importar Archivo</button>
     </form>
 </div>
+
+{% if filas_omitidas %}
+<div id="modal-omitidas" class="modal-fondo">
+  <div class="modal-caja">
+    <div class="modal-encabezado">
+      <strong>Registros no cargados ({{ filas_omitidas|length }})</strong>
+    </div>
+    <div class="modal-cuerpo">
+      <p>Estas filas del Excel no se cargaron. Repórtalas al área productora para su corrección:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Fila</th>
+            <th>Fecha</th>
+            <th>Clave</th>
+            <th>Asunto</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in filas_omitidas %}
+          <tr>
+            <td>{{ f.fila }}</td>
+            <td>{{ f.fecha }}</td>
+            <td>{{ f.clave }}</td>
+            <td>{{ f.asunto[:80] }}</td>
+            <td>{{ f.motivo }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-pie">
+      <a href="/documentos" class="btn-primario">Ir a documentos</a>
+      <button type="button" onclick="document.getElementById('modal-omitidas').style.display='none'">Cerrar</button>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 

@@ -23,8 +23,13 @@
 
     <!-- Solicitante -->
     <label class="fw-bold">Solicitante</label>
-    <input type="text" name="solicitante" required
+    <input type="text" name="solicitante" list="lista-solicitantes" required
            value="{% if doc.solicitante != 'Sistema' %}{{ doc.solicitante }}{% endif %}">
+    <datalist id="lista-solicitantes">
+        {% for s in solicitantes %}
+        <option value="{{ s }}"></option>
+        {% endfor %}
+    </datalist>
 
     <!-- Fecha de recepción -->
     <label class="fw-bold">Fecha de recepción</label>

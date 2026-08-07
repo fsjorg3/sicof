@@ -96,6 +96,11 @@ def _patron_busqueda(texto):
     return f"%{escapado}%"
 
 
+def _texto_celda(valor):
+    """NaN/None -> '' ; cualquier otro valor -> texto recortado."""
+    return "" if pd.isna(valor) else str(valor).strip()
+
+
 # ============================================================
 #   GENERACIÓN AUTOMÁTICA SEMANAL DE FOLIOS RESERVADOS
 # ============================================================
@@ -226,6 +231,21 @@ def registrar_rutas(app):
                 ),
             )
         )
+
+    def solicitantes_sugeridos():
+        """Nombres (usuarios.nombre_completo) para autocompletar el solicitante.
+        superadmin/admin/SISTEMAS: todos; una gerencia: solo los de su gerencia."""
+        rol = session.get("usuario_rol")
+        gerencia = session.get("usuario_gerencia")
+
+        query = Usuario.query.with_entities(Usuario.nombre_completo).filter(
+            Usuario.nombre_completo.isnot(None), Usuario.nombre_completo != ""
+        )
+        if not (rol in ("superadmin", "admin") or gerencia == "SISTEMAS"):
+            query = query.filter(Usuario.gerencia == gerencia)
+
+        filas = query.distinct().order_by(Usuario.nombre_completo).all()
+        return [f[0] for f in filas]
     # ============================================================
     #   SALUD (sondas del proxy y verificación de despliegue)
     # ============================================================
@@ -325,6 +345,7 @@ def registrar_rutas(app):
 
             nuevo = Usuario(
                 nombre=nombre,
+                nombre_completo=request.form.get("nombre_completo"),
                 password_hash=generate_password_hash(password),
                 rol=rol,
                 gerencia=gerencia,
@@ -346,6 +367,7 @@ def registrar_rutas(app):
 
         if request.method == "POST":
             u.nombre = request.form["nombre"]
+            u.nombre_completo = request.form.get("nombre_completo")
             u.rol = request.form["rol"]
             u.gerencia = request.form.get("gerencia")
             db.session.commit()
@@ -514,7 +536,11 @@ def registrar_rutas(app):
             return redirect("/documentos")
 
         clasificaciones = Clasificacion.query.all()
-        return render_template("documentos_nuevo.html", clasificaciones=clasificaciones)
+        return render_template(
+            "documentos_nuevo.html",
+            clasificaciones=clasificaciones,
+            solicitantes=solicitantes_sugeridos(),
+        )
 
     @app.route("/historial")
     @login_requerido
@@ -607,7 +633,10 @@ def registrar_rutas(app):
 
         clasificaciones = Clasificacion.query.all()
         return render_template(
-            "usar_reservado.html", doc=doc, clasificaciones=clasificaciones
+            "usar_reservado.html",
+            doc=doc,
+            clasificaciones=clasificaciones,
+            solicitantes=solicitantes_sugeridos(),
         )
     
     @app.route("/importar_dg_2026", methods=["GET", "POST"])
@@ -659,18 +688,20 @@ def registrar_rutas(app):
                 flash(str(e), "danger")
                 return redirect("/importar_dg_2026")
 
-            for _, fila in df.iterrows():
+            def _procesar_fila(fila):
+                """Procesa una fila del Excel y devuelve el estatus del documento
+                creado. Lanza una excepción si la fila no se puede cargar."""
 
                 # ============================
                 # VALIDAR NUMERO
                 # ============================
                 if pd.isna(fila["NUMERO"]):
-                    continue
+                    raise ValueError("Sin número de folio")
 
                 try:
-                    numero_excel = int(fila["NUMERO"])
-                except:
-                    continue
+                    int(fila["NUMERO"])
+                except (ValueError, TypeError):
+                    raise ValueError("Número de folio no válido")
 
                 # ============================
                 # FECHA
@@ -786,20 +817,40 @@ def registrar_rutas(app):
                 )
                 db.session.add(doc)
 
-                if estatus == "cancelado":
-                    total_cancelados += 1
-                total_importados += 1
+                return estatus
+
+            # Cada fila se procesa aislada: una fila con problemas se registra como
+            # omitida (con su motivo) y se informa al final, en vez de saltarse en
+            # silencio o abortar toda la importación.
+            filas_omitidas = []
+            for indice, fila in df.iterrows():
+                try:
+                    estatus = _procesar_fila(fila)
+                    if estatus == ESTATUS_CANCELADO:
+                        total_cancelados += 1
+                    total_importados += 1
+                except Exception as e:
+                    filas_omitidas.append({
+                        "fila": indice + 2,  # el encabezado ocupa la fila 1 del Excel
+                        "fecha": _texto_celda(fila.get("FECHA")),
+                        "clave": _texto_celda(fila.get("CLAVE")),
+                        "asunto": _texto_celda(fila.get("ASUNTO")),
+                        "motivo": str(e),
+                    })
 
             db.session.commit()
 
             flash(
-                f"DG {anio_global} importado correctamente. "
+                f"DG {anio_global} importado. "
                 f"Folios importados: {total_importados}. "
-                f"Cancelados: {total_cancelados}.",
+                f"Cancelados: {total_cancelados}. "
+                f"Omitidos: {len(filas_omitidas)}.",
                 "success"
             )
 
-            return redirect("/documentos")
+            return render_template(
+                "importar_dg_2026.html", filas_omitidas=filas_omitidas
+            )
 
         return render_template("importar_dg_2026.html")
 

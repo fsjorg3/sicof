@@ -136,7 +136,7 @@
            BOTONES
            ============================ */
         button {
-            background-color: var(--pantone-7421);
+            background-color: var(--cool-gray-10);
             color: white;
             padding: 10px 18px;
             border: none;
@@ -213,6 +213,69 @@
         .paginador-info {
             margin-left: auto;
             color: var(--cool-gray-10);
+        }
+
+        /* ============================
+           MODAL (aviso de registros no cargados)
+           ============================ */
+        .modal-fondo {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-caja {
+            background: white;
+            border-radius: 6px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-encabezado {
+            background: var(--cool-gray-10);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .modal-cuerpo {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-cuerpo table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .modal-cuerpo th {
+            background: var(--cool-gray-10);
+            color: white;
+            padding: 6px;
+            text-align: left;
+        }
+
+        .modal-cuerpo td {
+            padding: 6px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        .modal-pie {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
         }
 
     </style>
