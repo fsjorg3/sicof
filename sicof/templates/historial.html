@@ -1,9 +1,20 @@
 {% extends "base.html" %}
+{% from "_paginador.html" import renderizar as renderizar_paginador %}
 {% block content %}
 
 <h2 style="border-left:6px solid #4b4b4b; padding-left:10px; margin-bottom:20px;">
     📄 Historial de Documentos
 </h2>
+
+<form method="GET" style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+    <select name="per_page" onchange="this.form.submit()" style="flex:0 0 140px;">
+        {% for opcion in [25, 50, 100, 200] %}
+            <option value="{{ opcion }}" {% if pagina.per_page == opcion %}selected{% endif %}>
+                {{ opcion }} / página
+            </option>
+        {% endfor %}
+    </select>
+</form>
 
 <div style="
     background:white;
@@ -31,7 +42,7 @@
         </thead>
 
         <tbody>
-            {% for d in documentos %}
+            {% for d in pagina.items %}
             <tr style="border-bottom:1px solid #ddd;">
                 <td style="padding:8px;">{{ d.tipo }}</td>
                 <td style="padding:8px;">{{ d.solicitante }}</td>
@@ -40,14 +51,15 @@
                     {{ d.numero }}
                 </td>
                 <td style="padding:8px;">{{ d.asunto }}</td>
-                <td style="padding:8px;">{{ d.fecha }}</td>
-                <td style="padding:8px;">{{ d.clasificacion }}</td>
+                <td style="padding:8px;">{{ d.fecha_recepcion }}</td>
+                <td style="padding:8px;">{{ d.clasificacion.nombre if d.clasificacion }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
+    {{ renderizar_paginador(pagina, 'historial', {'per_page': pagina.per_page}) }}
+
 </div>
 
 {% endblock %}
-

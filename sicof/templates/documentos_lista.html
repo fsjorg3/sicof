@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_paginador.html" import renderizar as renderizar_paginador %}
 {% block content %}
 
 <h2 style="border-left:6px solid #4b4b4b; padding-left:10px;">
@@ -19,6 +20,10 @@
 ">
 
 <form method="GET" style="display:flex; flex-wrap:wrap; gap:15px;">
+
+    <input type="text" name="q" value="{{ request.args.get('q', '') }}"
+           placeholder="Buscar por solicitante, número, asunto, clasificación o expediente..."
+           style="flex:2; min-width:260px;">
 
     <select name="tipo" style="flex:1; min-width:180px;">
         <option value="">Tipo</option>
@@ -50,7 +55,16 @@
         <option value="DG">DG</option>
     </select>
 
-    <input type="number" name="anio" placeholder="Año" style="flex:1; min-width:150px;">
+    <input type="number" name="anio" value="{{ request.args.get('anio', '') }}"
+           placeholder="Año" style="flex:1; min-width:150px;">
+
+    <select name="per_page" style="flex:0 0 140px;">
+        {% for opcion in [25, 50, 100, 200] %}
+            <option value="{{ opcion }}" {% if pagina.per_page == opcion %}selected{% endif %}>
+                {{ opcion }} / página
+            </option>
+        {% endfor %}
+    </select>
 
     <button type="submit" style="background:#4b4b4b; color:white; padding:10px 15px; border:none; border-radius:4px;">
         🔍 Filtrar
@@ -80,7 +94,7 @@
     </thead>
 
     <tbody>
-        {% for d in documentos %}
+        {% for d in pagina.items %}
         <tr>
 
             <!-- Tipo -->
@@ -144,6 +158,14 @@
         {% endfor %}
     </tbody>
 </table>
+
+{{ renderizar_paginador(pagina, 'documentos_lista', {
+    'tipo': request.args.get('tipo', ''),
+    'gerencia': request.args.get('gerencia', ''),
+    'anio': request.args.get('anio', ''),
+    'q': request.args.get('q', ''),
+    'per_page': pagina.per_page,
+}) }}
 
 <style>
     .tabla-documentos {

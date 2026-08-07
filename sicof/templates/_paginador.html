@@ -1,0 +1,22 @@
+{% macro renderizar(pagina, endpoint, params={}) %}
+<div class="paginador">
+  {% if pagina.has_prev %}
+    <a href="{{ url_for(endpoint, page=pagina.prev_num, **params) }}">« Anterior</a>
+  {% endif %}
+
+  {% for num in pagina.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+    {% if num %}
+      <a href="{{ url_for(endpoint, page=num, **params) }}"
+         class="{{ 'pagina-actual' if num == pagina.page }}">{{ num }}</a>
+    {% else %}
+      <span>…</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if pagina.has_next %}
+    <a href="{{ url_for(endpoint, page=pagina.next_num, **params) }}">Siguiente »</a>
+  {% endif %}
+
+  <span class="paginador-info">Mostrando {{ pagina.first }}–{{ pagina.last }} de {{ pagina.total }}</span>
+</div>
+{% endmacro %}

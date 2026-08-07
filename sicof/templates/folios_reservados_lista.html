@@ -1,7 +1,18 @@
 {% extends "base.html" %}
+{% from "_paginador.html" import renderizar as renderizar_paginador %}
 {% block content %}
 
 <h2>Folios Reservados</h2>
+
+<form method="GET" style="display:flex; justify-content:flex-end; margin-bottom:15px;">
+    <select name="per_page" onchange="this.form.submit()" style="flex:0 0 140px;">
+        {% for opcion in [25, 50, 100, 200] %}
+            <option value="{{ opcion }}" {% if pagina.per_page == opcion %}selected{% endif %}>
+                {{ opcion }} / página
+            </option>
+        {% endfor %}
+    </select>
+</form>
 
 <table class="table">
     <thead>
@@ -15,7 +26,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for d in documentos %}
+        {% for d in pagina.items %}
         <tr style="background: var(--sasg-60);">
             <td>{{ d.tipo }}</td>
             <td>{{ d.numero }}</td>
@@ -28,9 +39,8 @@
     </tbody>
 </table>
 
+{{ renderizar_paginador(pagina, 'ver_folios_reservados', {'per_page': pagina.per_page}) }}
+
 <a href="/documentos" class="btn-primario">Volver</a>
 
 {% endblock %}
-
-
-

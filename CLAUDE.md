@@ -110,7 +110,17 @@ Al añadir una rama nueva de numeración, tomar el bloqueo antes de leer.
 
 ### Visibilidad por rol
 
-`filtrar_documentos_por_rol` filtra **en Python sobre la lista ya materializada**, no en SQL. superadmin/admin/SISTEMAS ven todo; DG ve lo suyo más lo que empiece con `DG/`; una gerencia ve sus documentos más los `DG/` que ella misma registró. Cualquier vista nueva que liste documentos debe pasar por esta función.
+`filtrar_documentos_por_rol` recibe y devuelve un `query` de SQLAlchemy — se aplica **antes** de `.all()`/`.paginate()`, nunca sobre una lista ya cargada. superadmin/admin/SISTEMAS ven todo; DG ve lo suyo más lo que empiece con `DG/`; una gerencia ve sus documentos más los `DG/` que ella misma registró. Cualquier vista nueva que liste documentos debe pasar por esta función, y debe llamarse antes de ejecutar la consulta.
+
+### Listados: paginación, filtros y búsqueda
+
+`/documentos`, `/historial` y `/reservados` usan `query.paginate(max_per_page=200, error_out=True)` (Flask-SQLAlchemy 3.x) en vez de `.all()`. `page`/`per_page` los lee `.paginate()` directo de `request.args`; un valor no numérico o fuera de rango da 404 limpio, no un 500 sin capturar.
+
+El control de paginación es un macro compartido, [sicof/templates/_paginador.html](sicof/templates/_paginador.html) — no se copia por plantilla. Cualquier listado nuevo debe importarlo (`{% from "_paginador.html" import renderizar as renderizar_paginador %}`) en vez de reinventar el control.
+
+Solo `/documentos` tiene búsqueda multicampo (`?q=`): un único input que busca en `tipo`, `solicitante`, `gerencia_solicita`, `numero`, `asunto`, `codigo_expediente` y la clasificación asociada (`codigo`/`nombre`, vía `outerjoin` — `LEFT JOIN`, porque `clasificacion_id` es nullable). El texto se escapa (`%`, `_`, `\`) antes de armar el patrón `ILIKE`, para que una búsqueda literal de esos caracteres no se interprete como comodín. Deliberadamente excluye `fecha_recepcion`: el filtro de año ya cubre esa necesidad con precisión, y mezclar formato de fecha con texto libre en el mismo campo no es coherente en UX.
+
+`ILIKE '%termino%'` con comodín inicial no puede usar un índice B-tree — implica recorrido completo de la tabla. Aceptable con el volumen actual (miles de filas); si crece a cientos de miles, el siguiente paso es un índice GIN con `pg_trgm`.
 
 ### Importación DG
 
@@ -119,6 +129,5 @@ Al añadir una rama nueva de numeración, tomar el bloqueo antes de leer.
 ## Trampas conocidas
 
 - **Claves foráneas.** SQLite no las valida por defecto; PostgreSQL sí. Los folios reservados y el importador resuelven usuario y clasificación por nombre/código (helpers `_usuario_sistema_id()` y `_clasificacion_por_defecto_id()` en `app.py`), no con ids fijos. No volver a escribir `usuario_id=1` ni `clasificacion_id=1`.
-- **Carrera en los consecutivos.** `registro.numero += 1` sin bloqueo: dos usuarios simultáneos pueden obtener el mismo folio. Con SQLite monousuario el riesgo es bajo; contra el Postgres centralizado sube. Se resuelve con `SELECT ... FOR UPDATE`. Pendiente.
-- **El hilo semanal** de folios reservados vive dentro del proceso web: con el reloader de debug se duplicaría y con varios workers se lanzaría una vez por worker. Va apagado por defecto y guardado tras `WERKZEUG_RUN_MAIN`; `/generar_folios_reservados` es el disparo manual. Debería migrar a una tarea programada externa.
+- **El hilo semanal** de folios reservados vive dentro del proceso web: con el reloader de debug se duplicaría y con varios workers se lanzaría una vez por worker. Va apagado por defecto y guardado tras `WERKZEUG_RUN_MAIN`; `/generar_folios_reservados` es el disparo manual (en producción lo sustituye `sicof-reservados.timer`, ver DESPLIEGUE.md).
 - `sicof/instance/sicof.db` es la base **antigua**, anterior a mover la BD a `instance/` en la raíz. Ya no se usa; se puede borrar.

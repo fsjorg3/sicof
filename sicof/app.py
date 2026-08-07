@@ -2,6 +2,7 @@ import os
 from flask import render_template, request, redirect, session, flash, current_app
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+from sqlalchemy import or_, and_
 
 # IMPORTS CORRECTOS PARA UN PAQUETE FLASK
 from sicof.models import Usuario, Documento, Clasificacion, Consecutivo, ConsecutivoDG
@@ -87,6 +88,12 @@ def crear_folio_reservado(gerencia, tipo, observaciones):
     db.session.add(reservado)
     db.session.commit()
     return reservado
+
+
+def _patron_busqueda(texto):
+    """Escapa % y _ para que una búsqueda literal no se interprete como comodín SQL."""
+    escapado = texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escapado}%"
 
 
 # ============================================================
@@ -177,29 +184,37 @@ def registrar_rutas(app):
             return func(*args, **kwargs)
         return wrapper
 
-    def filtrar_documentos_por_rol(documentos):
+    def filtrar_documentos_por_rol(query):
+        """
+        Restringe la consulta según el rol/gerencia de la sesión. Se aplica sobre el
+        `query` ANTES de ejecutar (.all() / .paginate()) — antes traía todas las filas
+        a Python y descartaba la mayoría ahí, pagando el costo completo de la consulta
+        incluso para roles que solo ven una fracción de los documentos.
+        """
         rol = session.get("usuario_rol")
         gerencia = session.get("usuario_gerencia")
         usuario_id = session.get("usuario_id")
 
-        if rol in ["superadmin", "admin"]:
-            return documentos
-
-        if gerencia == "SISTEMAS":
-            return documentos
+        if rol in ("superadmin", "admin") or gerencia == "SISTEMAS":
+            return query
 
         if gerencia == "DG":
-            return [
-                d for d in documentos
-                if d.gerencia_solicita == "DG"
-                or (d.numero and d.numero.startswith("DG/"))
-            ]
+            return query.filter(
+                or_(
+                    Documento.gerencia_solicita == "DG",
+                    Documento.numero.startswith("DG/"),
+                )
+            )
 
-        return [
-            d for d in documentos
-            if d.gerencia_solicita == gerencia
-            or (d.numero and d.numero.startswith("DG/") and d.usuario_id == usuario_id)
-        ]
+        return query.filter(
+            or_(
+                Documento.gerencia_solicita == gerencia,
+                and_(
+                    Documento.numero.startswith("DG/"),
+                    Documento.usuario_id == usuario_id,
+                ),
+            )
+        )
     # ============================================================
     #   SALUD (sondas del proxy y verificación de despliegue)
     # ============================================================
@@ -368,6 +383,7 @@ def registrar_rutas(app):
         tipo = request.args.get("tipo")
         gerencia = request.args.get("gerencia")
         anio = request.args.get("anio")
+        busqueda = request.args.get("q", "").strip()
 
         if tipo:
             query = query.filter_by(tipo=tipo)
@@ -376,13 +392,34 @@ def registrar_rutas(app):
             query = query.filter_by(gerencia_solicita=gerencia)
 
         if anio:
-            query = query.filter(
-                (Documento.anio == int(anio))
-                | (Documento.estatus == ESTATUS_RESERVADO)
+            try:
+                anio_int = int(anio)
+                query = query.filter(
+                    (Documento.anio == anio_int)
+                    | (Documento.estatus == ESTATUS_RESERVADO)
+                )
+            except ValueError:
+                flash("El año debe ser un número.", "danger")
+
+        if busqueda:
+            patron = _patron_busqueda(busqueda)
+            query = query.outerjoin(Clasificacion).filter(
+                or_(
+                    Documento.tipo.ilike(patron, escape="\\"),
+                    Documento.solicitante.ilike(patron, escape="\\"),
+                    Documento.gerencia_solicita.ilike(patron, escape="\\"),
+                    Documento.numero.ilike(patron, escape="\\"),
+                    Documento.asunto.ilike(patron, escape="\\"),
+                    Documento.codigo_expediente.ilike(patron, escape="\\"),
+                    Clasificacion.codigo.ilike(patron, escape="\\"),
+                    Clasificacion.nombre.ilike(patron, escape="\\"),
+                )
             )
 
-        documentos = query.order_by(Documento.fecha_registro.desc()).all()
-        documentos = filtrar_documentos_por_rol(documentos)
+        query = filtrar_documentos_por_rol(query)
+        query = query.order_by(Documento.fecha_registro.desc())
+
+        pagina = query.paginate(max_per_page=200, error_out=True)
 
         contador_reservados = Documento.query.filter_by(
             estatus=ESTATUS_RESERVADO
@@ -390,7 +427,7 @@ def registrar_rutas(app):
 
         return render_template(
             "documentos_lista.html",
-            documentos=documentos,
+            pagina=pagina,
             contador_reservados=contador_reservados
         )
 
@@ -471,20 +508,20 @@ def registrar_rutas(app):
     @app.route("/historial")
     @login_requerido
     def historial():
-        documentos = Documento.query.order_by(Documento.fecha_registro.desc()).all()
-        documentos = filtrar_documentos_por_rol(documentos)
-        return render_template("historial.html", documentos=documentos)
+        query = Documento.query.order_by(Documento.fecha_registro.desc())
+        query = filtrar_documentos_por_rol(query)
+        pagina = query.paginate(max_per_page=200, error_out=True)
+        return render_template("historial.html", pagina=pagina)
 
     @app.route("/reservados")
     @login_requerido
     def ver_folios_reservados():
-        reservados = Documento.query.filter_by(estatus=ESTATUS_RESERVADO).order_by(
+        query = Documento.query.filter_by(estatus=ESTATUS_RESERVADO).order_by(
             Documento.fecha_recepcion.desc()
-        ).all()
-
-        reservados = filtrar_documentos_por_rol(reservados)
-
-        return render_template("folios_reservados_lista.html", documentos=reservados)
+        )
+        query = filtrar_documentos_por_rol(query)
+        pagina = query.paginate(max_per_page=200, error_out=True)
+        return render_template("folios_reservados_lista.html", pagina=pagina)
     
     @app.route("/generar_folios_reservados")
     @requiere_superadmin
