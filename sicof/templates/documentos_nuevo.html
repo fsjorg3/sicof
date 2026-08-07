@@ -29,21 +29,13 @@
     <label style="margin-top:20px;"><strong>Tipo de documento</strong></label>
     <select name="tipo" required
             style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-        <optgroup label="Documentos institucionales (folio DG)">
-            <option value="oficio_dg">Oficio DG</option>
-            <option value="oficio_circular_dg">Oficio-Circular DG</option>
-            <option value="memorandum_circular_dg">Memorándum-Circular DG</option>
-	    <option value="memorandum_dg">Memorándum DG</option>
-            <option value="acuerdo_dg">Acuerdo DG</option>
+        {% for etiqueta_grupo, opciones in grupos_tipo_documento %}
+        <optgroup label="{{ etiqueta_grupo }}">
+            {% for valor, texto in opciones %}
+            <option value="{{ valor }}">{{ texto }}</option>
+            {% endfor %}
         </optgroup>
-
-        <optgroup label="Documentos internos (folio de gerencia)">
-            <option value="oficio_int">Oficio interno</option>
-            <option value="oficio_circular_int">Oficio-Circular interna</option>
-            <option value="memorandum_circular_int">Memorándum-Circular interna</option>
-	    <option value="memorandum_int">Memorándum interno</option>
-            <option value="acuerdo_int">Acuerdo interna</option>
-        </optgroup>
+        {% endfor %}
     </select>
 
     <!-- ============================

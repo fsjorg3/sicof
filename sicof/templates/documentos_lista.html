@@ -28,21 +28,13 @@
     <select name="tipo" style="flex:1; min-width:180px;">
         <option value="">Tipo</option>
 
-        <optgroup label="Documentos DG">
-            <option value="oficio_dg">Oficio DG</option>
-            <option value="oficio_circular_dg">Oficio-Circular DG</option>
-            <option value="memorandum_circular_dg">Memorándum-Circular DG</option>
-            <option value="memorandum_dg">Memorándum DG</option>
-            <option value="acuerdo_dg">Acuerdo DG</option>
+        {% for etiqueta_grupo, opciones in grupos_tipo_documento %}
+        <optgroup label="{{ etiqueta_grupo }}">
+            {% for valor, texto in opciones %}
+            <option value="{{ valor }}" {% if request.args.get('tipo') == valor %}selected{% endif %}>{{ texto }}</option>
+            {% endfor %}
         </optgroup>
-
-        <optgroup label="Documentos internos">
-            <option value="oficio_int">Oficio interno</option>
-            <option value="oficio_circular_int">Oficio-Circular interna</option>
-            <option value="memorandum_circular_int">Memorándum-Circular interna</option>
-            <option value="memorandum_int">Memorándum interno</option>
-            <option value="acuerdo_int">Acuerdo interna</option>
-        </optgroup>
+        {% endfor %}
     </select>
 
     <select name="gerencia" style="flex:1; min-width:180px;">
@@ -98,13 +90,7 @@
         <tr>
 
             <!-- Tipo -->
-            <td>
-                {% if d.tipo.endswith("_dg") %}
-                    <strong>DG</strong> – {{ d.tipo.replace("_dg","").capitalize() }}
-                {% else %}
-                    Interno – {{ d.tipo.replace("_int","").capitalize() }}
-                {% endif %}
-            </td>
+            <td>{{ etiquetas_tipo_documento.get(d.tipo, d.tipo) }}</td>
 
             <td>{{ d.solicitante }}</td>
             <td>{{ d.gerencia_solicita }}</td>

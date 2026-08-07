@@ -167,6 +167,17 @@ def registrar_rutas(app):
 
     iniciar_tarea_semanal(app)
 
+    from sicof.constantes import GRUPOS_TIPO_DOCUMENTO, ETIQUETAS_TIPO_DOCUMENTO
+
+    @app.context_processor
+    def inyectar_tipos_documento():
+        # Disponibles en todas las plantillas: desplegables del alta/filtro y la
+        # columna "Tipo" de los listados, sin plomería por cada render_template.
+        return {
+            "grupos_tipo_documento": GRUPOS_TIPO_DOCUMENTO,
+            "etiquetas_tipo_documento": ETIQUETAS_TIPO_DOCUMENTO,
+        }
+
     def login_requerido(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
