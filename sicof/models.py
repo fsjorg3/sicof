@@ -64,9 +64,6 @@ class Documento(db.Model):
     consecutivo = db.Column(db.Integer)
     anio = db.Column(db.Integer)
 
-    # Text, no String(500): correspondencia real puede superar los 500
-    # caracteres (verificado contra datos DG reales, hasta 1138). Truncar el
-    # asunto de un oficio institucional no es aceptable en un sistema de archivo.
     asunto = db.Column(db.Text, nullable=False)
     fecha_recepcion = db.Column(db.String(20), nullable=False)
     prioridad = db.Column(db.String(20))
@@ -119,18 +116,6 @@ def _bloquear_contador(clave):
     """
     Serializa la generación de folios para una clave lógica.
 
-    `registro.numero += 1` es un leer-modificar-escribir: con varios workers
-    contra el Postgres central, dos peticiones simultáneas leen el mismo valor
-    y se llevan el mismo folio.
-
-    Se usa un bloqueo de aviso (advisory lock) de transacción y no
-    `SELECT ... FOR UPDATE` porque el contador puede **no existir todavía**:
-    FOR UPDATE no bloquea una fila inexistente, así que dos workers podrían
-    insertar el primer contador a la vez. El bloqueo de aviso protege la clave
-    lógica exista o no la fila, y se libera solo al terminar la transacción.
-
-    En SQLite es un no-op: no hay concurrencia real que serializar en
-    desarrollo local.
     """
     from hashlib import blake2b
 

@@ -13,8 +13,6 @@ db = SQLAlchemy()
 def create_app():
     load_dotenv(os.path.join(RAIZ_PROYECTO, ".env"))
 
-    # instance_path en la raíz del proyecto: la base de datos no debe vivir
-    # dentro del paquete, mezclada con el código fuente.
     app = Flask(__name__, instance_path=os.path.join(RAIZ_PROYECTO, "instance"))
     app.config.from_object(Config())
 
@@ -36,7 +34,7 @@ def create_app():
     db.init_app(app)
 
     # Los modelos deben importarse antes de cualquier create_all().
-    from . import models  # noqa: F401
+    from . import models  
 
     registrar_comandos(app)
 

@@ -23,10 +23,7 @@ def _booleano(valor, por_defecto=False):
 
 def _clave_secreta(debug):
     """
-    SECRET_KEY firma las cookies de sesión: si se conoce, se puede suplantar
-    a cualquier usuario. En producción es obligatoria; en debug se genera una
-    efímera para no bloquear el arranque local, a costa de invalidar las
-    sesiones en cada reinicio.
+    SECRET_KEY firma las cookies de sesión
     """
     clave = os.environ.get("SECRET_KEY")
     if clave:
@@ -56,8 +53,6 @@ def _uri_base_datos():
     """
     url = os.environ.get("DATABASE_URL")
     if url:
-        # Algunos proveedores entregan el esquema antiguo 'postgres://',
-        # que SQLAlchemy 2.x ya no reconoce.
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+psycopg2://", 1)
         return url
@@ -88,8 +83,7 @@ class Config:
 
         # --- Límite de subida -------------------------------------------
         # /importar_dg_2026 entrega el archivo a pandas.read_excel, que lo
-        # carga entero en memoria. Sin tope, una subida grande agota la RAM
-        # del contenedor. Debe ir alineado con client_max_body_size de nginx.
+        # carga entero en memoria
         self.MAX_CONTENT_LENGTH = (
             int(os.environ.get("MAX_UPLOAD_MB", "20")) * 1024 * 1024
         )

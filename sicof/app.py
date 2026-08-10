@@ -22,15 +22,6 @@ import pandas as pd
 import threading
 import time
 
-
-# ============================================================
-#   REFERENCIAS SEMBRADAS POR `flask init-db`
-# ============================================================
-# Antes se insertaba con usuario_id=1 y clasificacion_id=1 fijos. SQLite no
-# valida claves foráneas por defecto, pero PostgreSQL sí: contra una base
-# recién creada esas filas no tienen por qué existir y la inserción falla.
-# Se resuelven por nombre/código, que es lo que siembra `flask init-db`.
-
 class ReferenciaFaltante(Exception):
     """Falta un dato semilla; el llamador decide cómo informarlo."""
 
@@ -148,13 +139,7 @@ def tarea_semanal_folios(app):
 def iniciar_tarea_semanal(app):
     """
     Arranca el generador semanal, si está habilitado.
-
-    Es un hilo dentro del proceso web, así que:
-      - con el reloader de debug se lanzaría por duplicado (dos procesos);
-      - con varios workers en producción se lanzaría una vez por worker.
-    Por eso está apagado por defecto (FOLIOS_RESERVADOS_AUTO) y la ruta
-    /generar_folios_reservados queda como disparo manual. A futuro debería
-    ser una tarea programada externa al servidor web.
+    
     """
     if not app.config.get("FOLIOS_RESERVADOS_AUTO"):
         return
