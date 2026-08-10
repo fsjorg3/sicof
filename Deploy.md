@@ -6,15 +6,15 @@ contra el PostgreSQL centralizado del organismo.
 ## Arquitectura
 
 ```
-navegador ──HTTPS──► proxy corporativo ──HTTP──► LXC 172.16.1.34
+navegador ──HTTPS──► proxy corporativo ──HTTP──► LXC XXXX.XXXX.XXXX.XXXX
                      (termina TLS)                 │
                                                    ├─ nginx :80
                                                    │    └─ unix:/run/sicof/gunicorn.sock
                                                    └─ gunicorn (3 workers) → Flask
                                                                               │
                                                                               ▼
-                                                          PostgreSQL centralizado :5432
-                                                                   base: sicof_db
+                                                              PostgreSQL :5432
+                                                                    base: sicof_db
 ```
 
 El LXC **no guarda estado**: todos los datos viven en el PostgreSQL central. El
@@ -25,7 +25,7 @@ contenedor puede reconstruirse entero desde este repositorio más el archivo
 |---|---|
 | Cores / RAM | 3 / 4 GB |
 | Disco | 48 GB |
-| IP | 172.16.1.34 |
+| IP | XXXX.XXXX.XXXX.XXXX |
 | Sistema | Debian 13 (Python 3.13) |
 | Base de datos | `sicof_db` en el PostgreSQL centralizado |
 
@@ -74,12 +74,6 @@ ALTER SCHEMA public OWNER TO sicof;
 GRANT ALL ON SCHEMA public TO sicof;
 ```
 
-> Estas dos últimas líneas **no son opcionales**. Desde PostgreSQL 15 el esquema
-> `public` ya no concede `CREATE` a `PUBLIC`, y `db.create_all()` fallaría con
-> *permission denied for schema public*.
-
-El `LC_COLLATE` en español importa: el catálogo archivístico y los nombres de
-gerencia llevan acentos, y de él depende el orden alfabético de los listados.
 
 ### Acceso de red
 
@@ -87,7 +81,7 @@ En `postgresql.conf`, que `listen_addresses` incluya la interfaz que ve el LXC.
 En `pg_hba.conf`, **antes** de las reglas genéricas:
 
 ```
-host    sicof_db    sicof    172.16.1.34/32    scram-sha-256
+host    sicof_db    sicof    XXXX.XXXX.XXXX.XXXX/32    scram-sha-256
 ```
 
 Recargar:
@@ -96,19 +90,17 @@ Recargar:
 SELECT pg_reload_conf();
 ```
 
-Comprobar que el firewall del servidor permite el 5432 desde 172.16.1.34.
-
 ---
 
 ## Paso 3 — Crear el LXC
 
 Contenedor **no privilegiado**, plantilla Debian 13, 3 cores, 4 GB RAM, 48 GB
-de disco, IP estática 172.16.1.34.
+de disco, IP estática XXXX.XXXX.XXXX.XXXX.
 
 Con los *Proxmox VE Helper-Scripts*, desde la shell del nodo:
 
 ```bash
-var_ctid="104" var_hostname="sicofserver" var_cpu="3" var_ram="4096" var_disk="48" var_os="debian" var_version="13" var_unprivileged="1" var_net="172.16.1.34/24" var_gateway="172.16.1.1" var_brg="vmbr0" var_ns="172.16.1.41" var_ssh="yes" var_pw="[password]" var_timezone="America/Mexico_City" var_container_storage="VMs_volumes" bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/debian.sh)"
+var_ctid="104" var_hostname="sicofserver" var_cpu="3" var_ram="4096" var_disk="48" var_os="debian" var_version="13" var_unprivileged="1" var_net="XXXX.XXXX.XXXX.XXXX/24" var_gateway="XXXX.XXXX.XXXX.XXXX" var_brg="vmbr0" var_ns="XXXX.XXXX.XXXX.XXXX" var_ssh="yes" var_pw="[password]" var_timezone="America/Mexico_City" var_container_storage="container_storage" bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/debian.sh)"
 ```
 
 > **`var_net` es la dirección, no el modo.** Acepta `dhcp` o una IP/CIDR y la
@@ -228,7 +220,7 @@ Crear `/etc/sicof/sicof.env`:
 
 ```ini
 SECRET_KEY=<salida del comando anterior>
-DATABASE_URL=postgresql+psycopg2://sicof:CLAVE@pg.interno:5432/sicof_db
+DATABASE_URL=postgresql+psycopg2://sicof:CLAVE@<pg.interno>:5432/sicof_db
 FLASK_DEBUG=0
 PROXY_SALTOS=2
 SESSION_COOKIE_SECURE=1
@@ -313,6 +305,7 @@ ExecStart=/opt/sicof/venv/bin/gunicorn \
     --workers 3 \
     --bind unix:/run/sicof/gunicorn.sock \
     --umask 007 \
+    --no-control-socket \
     --timeout 120 \
     --access-logfile - --error-logfile - \
     "sicof:create_app()"
@@ -348,6 +341,10 @@ Decisiones de esta unidad:
 - **`--timeout 120`** porque una importación grande supera los 30 s por defecto
   y gunicorn mataría al worker a media transacción.
 - **`--umask 007`** deja el socket en 0770, accesible al grupo `sicof`.
+- **`--no-control-socket`** desactiva el control socket nuevo de gunicorn 26. Sin él,
+  gunicorn intenta crearlo en `$HOME/.gunicorn/` (= `/opt/sicof/.gunicorn`), que
+  `ProtectSystem=strict` tiene en solo lectura, y registra un `[ERROR] Control server
+  error: Read-only file system` en cada arranque. No usamos esa función.
 - **`ProtectSystem=strict`** deja el sistema de archivos en solo lectura salvo
   `ReadWritePaths`; por eso `instance/` se declara explícitamente.
 
