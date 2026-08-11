@@ -21,6 +21,13 @@ from datetime import datetime
 import pandas as pd
 import threading
 import time
+import unicodedata
+
+from sicof.models import (
+    establecer_tope_manual,
+    obtener_maximo_folio,
+    registrar_folio_importado,
+)
 
 class ReferenciaFaltante(Exception):
     """Falta un dato semilla; el llamador decide cómo informarlo."""
@@ -90,6 +97,36 @@ def _patron_busqueda(texto):
 def _texto_celda(valor):
     """NaN/None -> '' ; cualquier otro valor -> texto recortado."""
     return "" if pd.isna(valor) else str(valor).strip()
+
+
+def _normalizar_tipo_importado(texto):
+    """Normaliza acentos y separadores del texto proveniente del Excel."""
+    sin_acentos = unicodedata.normalize("NFKD", texto)
+    sin_acentos = "".join(
+        caracter for caracter in sin_acentos
+        if not unicodedata.combining(caracter)
+    )
+    return sin_acentos.replace("-", " ").upper()
+
+
+def _tipo_documento_importado(tipo_area, es_dg):
+    """Convierte la descripción del Excel al tipo interno de SICOF."""
+    texto = _normalizar_tipo_importado(tipo_area)
+    sufijo = "_dg" if es_dg else "_int"
+
+    if "MEMORANDUM" in texto and "CIRCULAR" in texto:
+        return f"memorandum_circular{sufijo}"
+    if "OFICIO" in texto and "CIRCULAR" in texto:
+        return f"oficio_circular{sufijo}"
+    if "MEMORANDUM" in texto:
+        return f"memorandum{sufijo}"
+    if "OFICIO" in texto:
+        return f"oficio{sufijo}"
+    if "CIRCULAR" in texto:
+        return f"oficio_circular{sufijo}"
+    if "ACUERDO" in texto:
+        return f"acuerdo{sufijo}"
+    return f"oficio{sufijo}"
 
 
 # ============================================================
@@ -458,19 +495,17 @@ def registrar_rutas(app):
     @app.route("/documentos/nuevo", methods=["GET", "POST"])
     @login_requerido
     def documentos_nuevo():
-        from .models import generar_numero_documento
-
         if request.method == "POST":
             tipo = request.form["tipo"]
+
+            if tipo not in TIPOS_DOCUMENTO:
+                flash("El tipo de documento no es válido.", "danger")
+                return redirect("/documentos/nuevo")
 
             if tipo.endswith("_dg"):
                 gerencia_solicita = "DG"
             else:
                 gerencia_solicita = request.form["gerencia_solicita"]
-
-            numero_generado, consecutivo_real, anio_real = generar_numero_documento(
-                gerencia_solicita, tipo
-            )
 
             clasificacion_id = request.form.get("clasificacion_id")
             if not clasificacion_id:
@@ -481,6 +516,10 @@ def registrar_rutas(app):
             if not clasificacion:
                 flash("La clasificación seleccionada no existe.", "danger")
                 return redirect("/documentos/nuevo")
+
+            numero_generado, consecutivo_real, anio_real = generar_numero_documento(
+                gerencia_solicita, tipo
+            )
 
             codigo_clasificacion = clasificacion.codigo
 
@@ -662,7 +701,7 @@ def registrar_rutas(app):
             total_importados = 0
             total_cancelados = 0
 
-            from sicof.models import ConsecutivoDG, Consecutivo, Documento
+            from sicof.models import Documento
             from datetime import datetime
 
             anio_global = current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
@@ -676,17 +715,6 @@ def registrar_rutas(app):
             def _procesar_fila(fila):
                 """Procesa una fila del Excel y devuelve el estatus del documento
                 creado. Lanza una excepción si la fila no se puede cargar."""
-
-                # ============================
-                # VALIDAR NUMERO
-                # ============================
-                if pd.isna(fila["NUMERO"]):
-                    raise ValueError("Sin número de folio")
-
-                try:
-                    int(fila["NUMERO"])
-                except (ValueError, TypeError):
-                    raise ValueError("Número de folio no válido")
 
                 # ============================
                 # FECHA
@@ -717,7 +745,7 @@ def registrar_rutas(app):
                 # ============================
                 # 2. LEER DOCUMENTO GENERADO
                 # ============================
-                doc_gen_raw = str(fila["DOCUMENTO GENERADO"]).strip().upper()
+                doc_gen_raw = _texto_celda(fila["DOCUMENTO GENERADO"]).upper()
                 tiene_consecutivo = (doc_gen_raw != "" and "/" in doc_gen_raw)
 
                 # ============================
@@ -730,51 +758,31 @@ def registrar_rutas(app):
                     numero = int(partes[1].strip())        # 1
                     anio = int(partes[2].strip())          # 2026
 
-                    # CLASIFICAR TIPO
-                    if "OFICIO" in tipo_area:
-                        tipo_doc = "oficio_dg" if es_dg else "oficio_int"
-                    elif "MEMORANDUM" in tipo_area:
-                        tipo_doc = "memorandum_dg" if es_dg else "memorandum_int"
-                    elif "CIRCULAR" in tipo_area:
-                        tipo_doc = "oficio_circular_dg" if es_dg else "oficio_circular_int"
-                    elif "ACUERDO" in tipo_area:
-                        tipo_doc = "acuerdo_dg" if es_dg else "acuerdo_int"
-                    else:
-                        tipo_doc = "oficio_dg" if es_dg else "oficio_int"
+                    tipo_doc = _tipo_documento_importado(tipo_area, es_dg)
 
                 else:
                     # ============================
                     # 4. SI NO VIENE CONSECUTIVO → GENERAR UNO NUEVO
                     # ============================
-                    if es_dg:
-                        ultimo = ConsecutivoDG.query.order_by(ConsecutivoDG.numero.desc()).first()
-                    else:
-                        ultimo = Consecutivo.query.filter_by(gerencia=clave).order_by(Consecutivo.numero.desc()).first()
-
-                    numero = (ultimo.numero + 1) if ultimo else 1
-                    anio = anio_global
-
                     tipo_doc = "oficio_dg" if es_dg else "oficio_int"
-
-                # ============================
-                # GUARDAR CONSECUTIVO
-                # ============================
-                if es_dg:
-                    nuevo = ConsecutivoDG(
-                        numero=numero,
-                        estatus=estatus,
-                        fecha=fecha,
-                        asunto=asunto
-                    )
-                else:
-                    nuevo = Consecutivo(
-                        numero=numero,
-                        gerencia=clave,
-                        tipo=tipo_doc,
-                        anio=anio
+                    gerencia_generadora = "DG" if es_dg else clave
+                    _, numero, anio = generar_numero_documento(
+                        gerencia_generadora,
+                        tipo_doc,
                     )
 
-                db.session.add(nuevo)
+                # Los folios explícitos actualizan el tope lógico. Los folios
+                # generados por el generador central ya lo actualizaron.
+                if tiene_consecutivo:
+                    registrar_folio_importado(
+                        clave,
+                        tipo_doc,
+                        anio,
+                        numero,
+                        estatus,
+                        fecha,
+                        asunto,
+                    )
 
                 # ============================
                 # GUARDAR DOCUMENTO
@@ -810,7 +818,8 @@ def registrar_rutas(app):
             filas_omitidas = []
             for indice, fila in df.iterrows():
                 try:
-                    estatus = _procesar_fila(fila)
+                    with db.session.begin_nested():
+                        estatus = _procesar_fila(fila)
                     if estatus == ESTATUS_CANCELADO:
                         total_cancelados += 1
                     total_importados += 1
@@ -909,9 +918,10 @@ def registrar_rutas(app):
         # OBTENER ÚLTIMO FOLIO UTILIZADO POR CADA TIPO (DINÁMICO)
         # ================================
         ultimos_folios = {}
+        maximos_folio = {}
 
         # Obtener todos los tipos reales existentes en la BD
-        tipos = [t[0] for t in db.session.query(Documento.tipo).distinct().all()]
+        tipos = TIPOS_DOCUMENTO
 
         for t in tipos:
             ultimo = (
@@ -921,18 +931,25 @@ def registrar_rutas(app):
                 .first()
             )
             ultimos_folios[t] = ultimo
+            gerencia_folio = "DG" if t.endswith("_dg") else "GLOBAL"
+            maximos_folio[t] = obtener_maximo_folio(gerencia_folio, t)
 
         # ================================
         # ACTUALIZAR CONSECUTIVOS
         # ================================
         if request.method == "POST":
-            for c in consecutivos:
-                nuevo_inicio = request.form.get(f"inicio_{c.id}")
-                if nuevo_inicio:
-                    try:
-                        c.numero = int(nuevo_inicio)
-                    except:
-                        pass
+            try:
+                for tipo in tipos:
+                    if tipo.endswith("_dg") and tipo != "oficio_dg":
+                        continue
+
+                    nuevo_tope = request.form.get(f"nuevo_consecutivo_{tipo}")
+                    if nuevo_tope:
+                        establecer_tope_manual(tipo, int(nuevo_tope))
+            except (TypeError, ValueError) as e:
+                db.session.rollback()
+                flash(str(e), "danger")
+                return redirect("/configuracion")
 
             db.session.commit()
             flash("Consecutivos actualizados correctamente.", "success")
@@ -944,6 +961,8 @@ def registrar_rutas(app):
         return render_template(
             "configuracion.html",
             consecutivos=consecutivos,
-            ultimos_folios=ultimos_folios
+            ultimos_folios=ultimos_folios,
+            maximos_folio=maximos_folio,
+            tipos=tipos,
         )
 

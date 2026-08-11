@@ -1,74 +1,72 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- TÍTULO PRINCIPAL -->
 <h2 style="border-left:6px solid #4b4b4b; padding-left:10px; margin-bottom:20px;">
-    ⚙ Configuración del sistema
+    Configuración del sistema
 </h2>
 
-<!-- ============================================================
-     SECCIÓN: ÚLTIMO FOLIO UTILIZADO POR TIPO (EDITABLE)
-============================================================ -->
 <div style="
     background:white;
     padding:25px;
     border-radius:6px;
-    max-width:900px;
+    max-width:1000px;
     margin:40px auto;
     box-shadow:0 0 8px rgba(0,0,0,0.1);
 ">
 
     <h3 style="border-left:6px solid #4b4b4b; padding-left:10px;">
-        📌 Último folio utilizado por tipo de documento (editable)
+        Último folio disponible por tipo de documento
     </h3>
 
-    <form method="POST">
+    <p style="color:#666;">
+        El sistema utiliza el mayor folio registrado. El valor manual funciona
+        como tope mínimo y no permite reutilizar números.
+    </p>
 
+    <form method="POST">
         <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:14px;">
             <thead>
                 <tr style="background:#4b4b4b; color:white;">
                     <th style="padding:10px;">Tipo</th>
-                    <th style="padding:10px;">Último folio</th>
-                    <th style="padding:10px;">Fecha</th>
+                    <th style="padding:10px;">Máximo disponible</th>
+                    <th style="padding:10px;">Último documento</th>
                     <th style="padding:10px;">Gerencia</th>
-                    <th style="padding:10px;">Asunto</th>
-                    <th style="padding:10px;">Nuevo consecutivo</th>
+                    <th style="padding:10px;">Nuevo tope</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for tipo, folio in ultimos_folios.items() %}
+                {% for tipo in tipos %}
+                {% set folio = ultimos_folios.get(tipo) %}
                 <tr style="border-bottom:1px solid #ddd;">
-                    <td style="padding:8px;">{{ tipo }}</td>
-
-                    {% if folio %}
-                        <td style="padding:8px; font-weight:bold; color:#003366;">
-                            {{ folio.numero }}
-                        </td>
-                        <td style="padding:8px;">{{ folio.fecha_recepcion }}</td>
-                        <td style="padding:8px;">{{ folio.gerencia_solicita }}</td>
-                        <td style="padding:8px;">{{ folio.asunto }}</td>
-
-                        <td style="padding:8px;">
-                            {% if tipo == "oficio_dg" %}
-                                <!-- Ajuste solicitado: iniciar en 280 -->
-                                <input type="number"
-                                       name="nuevo_consecutivo_oficio_dg"
-                                       value="280"
-                                       style="width:100%; padding:6px;">
-                            {% else %}
-                                <input type="number"
-                                       name="nuevo_consecutivo_{{ tipo }}"
-                                       value="{{ folio.consecutivo }}"
-                                       style="width:100%; padding:6px;">
-                            {% endif %}
-                        </td>
-
-                    {% else %}
-                        <td colspan="5" style="padding:8px; color:#777;">
-                            No hay folios registrados para este tipo.
-                        </td>
-                    {% endif %}
+                    <td style="padding:8px;">
+                        {{ etiquetas_tipo_documento.get(tipo, tipo) }}
+                    </td>
+                    <td style="padding:8px; font-weight:bold; color:#003366;">
+                        {{ maximos_folio.get(tipo, 0) }}
+                    </td>
+                    <td style="padding:8px;">
+                        {% if folio %}
+                            {{ folio.numero }}<br>
+                            <small>{{ folio.fecha_recepcion }}</small>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td style="padding:8px;">
+                        {% if folio %}{{ folio.gerencia_solicita }}{% else %}—{% endif %}
+                    </td>
+                    <td style="padding:8px;">
+                        {% if tipo == "oficio_dg" or not tipo.endswith("_dg") %}
+                            <input type="number"
+                                   name="nuevo_consecutivo_{{ tipo }}"
+                                   value="{{ maximos_folio.get(tipo, 0) }}"
+                                   min="0"
+                                   style="width:100%; padding:6px;">
+                        {% else %}
+                            <span style="color:#666;">Secuencia DG compartida</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -79,10 +77,7 @@
                        border:none; border-radius:4px; font-weight:bold; width:100%;">
             Guardar cambios
         </button>
-
     </form>
-
 </div>
 
 {% endblock %}
-
