@@ -574,6 +574,56 @@ La tabla debe mostrar `tipo`, `anio` y la restricción
 con redirección y no registrar `NameError: name 'generar_numero_documento' is
 not defined`.
 
+#### Renombrar GSPOI a GPSOI
+
+Antes de modificar la base, generar y validar un respaldo completo desde el
+servidor de la aplicación:
+
+```bash
+mkdir -p ~/sicof_respaldo
+FECHA=$(date +%Y%m%d_%H%M%S)
+
+read -r -p "Usuario PostgreSQL: " PGUSER
+read -r -s -p "Contraseña PostgreSQL: " PGPASSWORD
+echo
+
+export PGUSER PGPASSWORD
+export PGHOST=172.16.1.45
+export PGPORT=5432
+export PGDATABASE=sicof_db
+
+ARCHIVO_RESPALDO="$HOME/sicof_respaldo/sicof_db_${FECHA}.dump"
+pg_dump --format=custom --verbose --file="$ARCHIVO_RESPALDO"
+
+unset PGPASSWORD PGUSER PGHOST PGPORT PGDATABASE
+
+ls -lh "$ARCHIVO_RESPALDO"
+pg_restore --list "$ARCHIVO_RESPALDO" | head -30
+```
+
+Después ejecutar la migración. El archivo ya contiene `BEGIN` y `COMMIT`, por
+lo que no debe combinarse con `--single-transaction`:
+
+```bash
+psql \
+  "postgresql://<usuario>:<contraseña>@172.16.1.45:5432/sicof_db" \
+  -v ON_ERROR_STOP=1 \
+  -f migracion_gspoi_a_gpsoi.sql
+```
+
+Validar que no queden referencias antiguas:
+
+```bash
+psql "postgresql://<usuario>:<contraseña>@172.16.1.45:5432/sicof_db" \
+  -c "SELECT COUNT(*) FROM usuarios WHERE gerencia = 'GSPOI';"
+psql "postgresql://<usuario>:<contraseña>@172.16.1.45:5432/sicof_db" \
+  -c "SELECT COUNT(*) FROM documentos WHERE gerencia_solicita = 'GSPOI' OR numero LIKE 'GSPOI/%';"
+psql "postgresql://<usuario>:<contraseña>@172.16.1.45:5432/sicof_db" \
+  -c "SELECT COUNT(*) FROM consecutivos WHERE gerencia = 'GSPOI';"
+```
+
+Las tres consultas deben devolver `0`. No ejecutar `flask init-db`.
+
 ### Logs
 
 ```bash

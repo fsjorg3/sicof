@@ -13,7 +13,7 @@ os.environ.setdefault("SICOF_ADMIN_PASSWORD", "test-password")
 
 from sicof import create_app, db
 from sicof.app import _tipo_documento_importado
-from sicof.constantes import TIPOS_DOCUMENTO
+from sicof.constantes import GERENCIAS, TIPOS_DOCUMENTO
 from sicof.models import (
     Clasificacion,
     Consecutivo,
@@ -43,14 +43,21 @@ class ConsecutivosTestCase(unittest.TestCase):
         db.session.remove()
         self.contexto.pop()
 
-    def agregar_documento(self, tipo, numero, gerencia="GAL", estatus="normal"):
+    def agregar_documento(
+        self,
+        tipo,
+        numero,
+        gerencia="GAL",
+        estatus="normal",
+        asunto="Documento de prueba",
+    ):
         db.session.add(
             Documento(
                 tipo=tipo,
                 numero=f"{gerencia}/{numero:04d}/{self.anio}",
                 consecutivo=numero,
                 anio=self.anio,
-                asunto="Documento de prueba",
+                asunto=asunto,
                 fecha_recepcion=f"{self.anio}-01-01",
                 gerencia_solicita=gerencia,
                 estatus=estatus,
@@ -337,6 +344,52 @@ class ConsecutivosTestCase(unittest.TestCase):
                 "acuerdo_int",
             },
         )
+
+    def test_gerencia_gpsoi_es_catalogo_y_aparece_en_las_pantallas(self):
+        self.assertIn("GPSOI", GERENCIAS)
+        self.assertNotIn("GSPOI", GERENCIAS)
+
+        cliente = self.app.test_client()
+        with cliente.session_transaction() as sesion:
+            sesion["usuario_id"] = 1
+            sesion["usuario_rol"] = "superadmin"
+
+        usuarios = cliente.get("/usuarios/nuevo")
+        documentos = cliente.get("/documentos")
+
+        self.assertEqual(usuarios.status_code, 200)
+        self.assertEqual(documentos.status_code, 200)
+        self.assertIn(b"GPSOI", usuarios.data)
+        self.assertIn(b"GPSOI", documentos.data)
+        self.assertNotIn(b"GSPOI", usuarios.data)
+        self.assertNotIn(b"GSPOI", documentos.data)
+
+    def test_usuario_de_gerencia_gpsoi_solo_ve_sus_documentos(self):
+        self.agregar_documento(
+            "oficio_int",
+            1,
+            gerencia="GPSOI",
+            asunto="Visible GPSOI",
+        )
+        self.agregar_documento(
+            "oficio_int",
+            2,
+            gerencia="GAL",
+            asunto="No visible GAL",
+        )
+        db.session.commit()
+
+        cliente = self.app.test_client()
+        with cliente.session_transaction() as sesion:
+            sesion["usuario_id"] = 1
+            sesion["usuario_rol"] = "gerencia"
+            sesion["usuario_gerencia"] = "GPSOI"
+
+        respuesta = cliente.get("/documentos")
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn(b"Visible GPSOI", respuesta.data)
+        self.assertNotIn(b"No visible GAL", respuesta.data)
 
 
 if __name__ == "__main__":

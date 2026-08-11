@@ -75,7 +75,7 @@ Todo lo que cambia entre máquinas vive en `.env` y se resuelve en [sicof/config
 
 ### Modelo de dominio ([sicof/models.py](sicof/models.py))
 
-- `Usuario` — roles `superadmin` / `admin` / `gerencia` / `sistema`; campo `gerencia` con valores GAL, GAF, GSTS, GSPOI, GSMA, DG (y "SISTEMAS" tratado como acceso total en el filtro por rol). El login valida `activo`.
+- `Usuario` — roles `superadmin` / `admin` / `gerencia` / `sistema`; campo `gerencia` con valores GAL, GAF, GSTS, GPSOI, GSMA, DG (y "SISTEMAS" tratado como acceso total en el filtro por rol). El login valida `activo`.
 - `Clasificacion` — catálogo archivístico (código `NN.NN` + nombre).
 - `Documento` — el registro central; `estatus` en `normal`, `reservado` o `cancelado`.
 - `Consecutivo` — contador por (gerencia, tipo, año).

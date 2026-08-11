@@ -39,12 +39,11 @@
 
     <select name="gerencia" style="flex:1; min-width:180px;">
         <option value="">Gerencia solicitante</option>
-        <option value="GAL">GAL</option>
-        <option value="GAF">GAF</option>
-        <option value="GSTS">GSTS</option>
-        <option value="GSPOI">GSPOI</option>
-        <option value="GSMA">GSMA</option>
-        <option value="DG">DG</option>
+        {% for gerencia in gerencias %}
+            <option value="{{ gerencia }}" {% if request.args.get('gerencia') == gerencia %}selected{% endif %}>
+                {{ gerencia }}
+            </option>
+        {% endfor %}
     </select>
 
     <input type="number" name="anio" value="{{ request.args.get('anio', '') }}"

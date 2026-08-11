@@ -37,11 +37,9 @@
     <div id="divGerencia" style="display:none; margin-top:10px;">
         <label class="fw-bold">Gerencia</label>
         <select name="gerencia">
-            <option value="GAL">GAL</option>
-            <option value="GAF">GAF</option>
-            <option value="GSTS">GSTS</option>
-            <option value="GSPOI">GSPOI</option>
-            <option value="GSMA">GSMA</option>
+            {% for gerencia in gerencias if gerencia != "DG" %}
+                <option value="{{ gerencia }}">{{ gerencia }}</option>
+            {% endfor %}
         </select>
     </div>
 

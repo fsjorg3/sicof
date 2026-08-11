@@ -202,6 +202,7 @@ def registrar_rutas(app):
         return {
             "grupos_tipo_documento": GRUPOS_TIPO_DOCUMENTO,
             "etiquetas_tipo_documento": ETIQUETAS_TIPO_DOCUMENTO,
+            "gerencias": GERENCIAS,
         }
 
     def login_requerido(func):
