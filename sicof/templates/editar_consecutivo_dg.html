@@ -2,7 +2,7 @@
 {% block content %}
 
 <div class="container mt-4">
-    <h3 class="mb-4">Editar Consecutivo de Gerencia</h3>
+    <h3 class="mb-4">Editar Consecutivo DG</h3>
 
     <form method="POST">
 
@@ -12,18 +12,33 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Gerencia</label>
-            <input type="text" name="gerencia" class="form-control" value="{{ cons.gerencia }}">
-        </div>
-
-        <div class="mb-3">
             <label class="form-label">Tipo de documento</label>
-            <input type="text" name="tipo" class="form-control" value="{{ cons.tipo }}">
+            <input type="text" class="form-control"
+                   value="{{ etiquetas_tipo_documento.get(cons.tipo, cons.tipo) }}" disabled>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Año</label>
-            <input type="number" name="anio" class="form-control" value="{{ cons.anio }}">
+            <input type="number" class="form-control" value="{{ cons.anio }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Estatus</label>
+            <select name="estatus" class="form-control" required>
+                <option value="registrado" {% if cons.estatus == "registrado" %}selected{% endif %}>Registrado</option>
+                <option value="cancelado" {% if cons.estatus == "cancelado" %}selected{% endif %}>Cancelado</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" name="fecha" class="form-control"
+                   value="{{ cons.fecha.isoformat() if cons.fecha else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Asunto</label>
+            <textarea name="asunto" class="form-control">{{ cons.asunto or '' }}</textarea>
         </div>
 
         <button class="btn btn-primary">Guardar cambios</button>

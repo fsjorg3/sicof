@@ -552,6 +552,28 @@ los datos sean descartables no duele; en cuanto haya folios reales en
 producción esto se convierte en el siguiente trabajo pendiente, y conviene
 incorporar Flask-Migrate antes de llegar ahí.
 
+#### Separación de consecutivos DG por tipo
+
+Para la base existente, respaldar primero y ejecutar desde `psql` el archivo
+`migracion_consecutivos_dg.sql` del repositorio. El script elimina solamente
+`documentos`, `consecutivos` y `consecutivos_dg`; conserva `usuarios` y
+`clasificaciones`. No ejecutar `flask init-db` como sustituto de esta
+migración.
+
+Después de aplicar el script, reiniciar la aplicación y comprobar el esquema:
+
+```bash
+sudo -u sicof psql "postgresql://sicof:CLAVE@pg.interno:5432/sicof_db" \
+  -c '\d consecutivos_dg'
+sudo systemctl restart sicof
+journalctl -u sicof -n 50 --no-pager
+```
+
+La tabla debe mostrar `tipo`, `anio` y la restricción
+`uq_consecutivos_dg_tipo_anio_numero`. El alta de un documento debe responder
+con redirección y no registrar `NameError: name 'generar_numero_documento' is
+not defined`.
+
 ### Logs
 
 ```bash

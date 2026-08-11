@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Sistema interno de control de folios/oficios del SOAPAP (organismo operador de agua de Puebla). Flask + SQLAlchemy, plantillas Jinja server-side, sin API JSON ni frontend JS. La interfaz, los datos y los identificadores están en español — mantener esa convención al escribir código nuevo.
 
-El proyecto está en pruebas. Los datos existentes son desechables y no hay procedimiento de migración: la base se recrea desde cero cuando hace falta.
+El proyecto está en pruebas. Los datos de documentos y folios son desechables;
+los usuarios se conservan mediante la migración SQL correspondiente.
 
 ## Puesta en marcha
 
@@ -67,7 +68,9 @@ Todo lo que cambia entre máquinas vive en `.env` y se resuelve en [sicof/config
 - `create_app()` solo configura y registra. La siembra de datos vive en el comando `init-db` y **nunca sobrescribe un usuario existente** — antes se recreaban `superadmin`/`admin` en cada arranque, revirtiendo los cambios de contraseña.
 - Dos comandos CLI en `registrar_comandos()`: `flask init-db` (tablas + semilla) y `flask generar-reservados` (lo dispara el systemd timer en producción; sale con código distinto de cero si falta la semilla, para que systemd marque el fallo).
 - `/salud` responde 200/503 según alcance la base. La usan las sondas del proxy y la verificación de despliegue; no requiere sesión.
-- El esquema se crea con `db.create_all()` y no hay Alembic (decisión consciente): **añadir una columna a un modelo no la agrega a una base existente**. Hay que recrear las tablas.
+- El esquema inicial se crea con `db.create_all()` y no hay Alembic. **Añadir una
+  columna a un modelo no la agrega a una base existente**; para DG se usa
+  `migracion_consecutivos_dg.sql`, que conserva usuarios y clasificaciones.
 - Constantes de dominio (gerencias, tipos documentales, estatus) en [sicof/constantes.py](sicof/constantes.py). Estaban duplicadas en dos rutas y habían empezado a divergir.
 
 ### Modelo de dominio ([sicof/models.py](sicof/models.py))
@@ -76,13 +79,15 @@ Todo lo que cambia entre máquinas vive en `.env` y se resuelve en [sicof/config
 - `Clasificacion` — catálogo archivístico (código `NN.NN` + nombre).
 - `Documento` — el registro central; `estatus` en `normal`, `reservado` o `cancelado`.
 - `Consecutivo` — contador por (gerencia, tipo, año).
-- `ConsecutivoDG` — libro aparte para los folios oficiales de Dirección General.
+- `ConsecutivoDG` — libro aparte para los folios oficiales de Dirección General,
+  separado por `(tipo, año, numero)`.
 
 ### Numeración de folios — la lógica crítica
 
 `generar_numero_documento(gerencia_solicita, tipo)` en `models.py` concentra las reglas, con tres ramas según el año (`ANIO_CONSECUTIVO_GLOBAL`):
 
-- `tipo` termina en `_dg` y el año coincide → lee `ConsecutivoDG`, formato `DG/0001/2026`.
+- `tipo` termina en `_dg` y el año coincide → lee el máximo de `Documento` y
+  `ConsecutivoDG` para ese tipo/año, formato `DG/0001/2026`.
 - año coincide (resto) → contador **global** en la fila `Consecutivo` con `gerencia="GLOBAL"`, pero el número se imprime con la gerencia del solicitante: `GAL/0001/2026`.
 - años posteriores → contador por gerencia y tipo.
 
@@ -96,17 +101,15 @@ Al tocar numeración revisar las tres ramas y ambos modelos de consecutivo: los 
 
 `registro.numero += 1` es un leer-modificar-escribir. Cada rama llama antes a `_bloquear_contador(clave)`, que toma un **bloqueo de aviso de transacción** de PostgreSQL (`pg_advisory_xact_lock`) sobre la clave lógica del contador. En SQLite es un no-op.
 
-Se eligió eso y no `SELECT ... FOR UPDATE` por dos razones: el contador puede **no existir todavía**, y `FOR UPDATE` no bloquea una fila inexistente; y la alternativa de añadir `UNIQUE (gerencia, tipo, anio)` habría **roto el importador**, que inserta una fila de `Consecutivo` por cada fila del Excel en vez de actualizar el contador.
+Se eligió eso y no `SELECT ... FOR UPDATE` por dos razones: el contador puede **no existir todavía**, y `FOR UPDATE` no bloquea una fila inexistente. El importador actualiza el máximo lógico de `Consecutivo` en vez de insertar una fila por cada registro del Excel.
 
 Al añadir una rama nueva de numeración, tomar el bloqueo antes de leer.
 
-### ⚠ Un defecto abierto en la numeración
+### Reglas de separación
 
-**El contador "global" colisiona entre tipos.** Está indexado por `(GLOBAL, tipo, año)` — uno por tipo documental — pero el folio impreso solo lleva gerencia y número, no el tipo. Los cinco tipos `_int` avanzan en paralelo y producen el mismo texto: `GAL/0001/2026` se repite para oficio, memorándum, circular y acuerdo.
-
-**Pendiente de decisión de diseño**, no corregir sin validar la regla: ¿consecutivo único por gerencia (un solo contador), o el folio debe incluir el tipo?
-
-*(El defecto de los folios DG, que salían todos como `DG/0001/2026` porque la rama `_dg` nunca insertaba la fila en `ConsecutivoDG`, está corregido: ahora persiste la fila y la secuencia avanza — una sola para todos los tipos DG, que es lo que permite la tabla.)*
+Los tipos documentales mantienen secuencias independientes. En particular,
+`oficio_dg`, `oficio_circular_dg`, `memorandum_dg`, `memorandum_circular_dg` y
+`acuerdo_dg` usan bloqueos y máximos separados por tipo y año.
 
 ### Visibilidad por rol
 

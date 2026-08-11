@@ -107,10 +107,21 @@ class ConsecutivoDG(db.Model):
     __tablename__ = "consecutivos_dg"
 
     id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(50), nullable=False)
+    anio = db.Column(db.Integer, nullable=False)
     numero = db.Column(db.Integer, nullable=False)
     estatus = db.Column(db.String(20), nullable=False)
     fecha = db.Column(db.Date)
     asunto = db.Column(db.String(500))
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "tipo",
+            "anio",
+            "numero",
+            name="uq_consecutivos_dg_tipo_anio_numero",
+        ),
+    )
 
 
 # ============================================================
@@ -160,8 +171,13 @@ def _maximo_consecutivo(gerencia, tipo, anio):
     )
 
 
-def _maximo_consecutivo_dg():
-    return db.session.query(func.max(ConsecutivoDG.numero)).scalar() or 0
+def _maximo_consecutivo_dg(tipo, anio):
+    return (
+        db.session.query(func.max(ConsecutivoDG.numero))
+        .filter_by(tipo=tipo, anio=anio)
+        .scalar()
+        or 0
+    )
 
 
 def obtener_maximo_folio(gerencia_solicita, tipo):
@@ -172,10 +188,9 @@ def obtener_maximo_folio(gerencia_solicita, tipo):
     anio_global = current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
 
     if tipo.endswith("_dg") and anio_actual == anio_global:
-        tipos_dg = tuple(t for t in TIPOS_DOCUMENTO if t.endswith("_dg"))
         return max(
-            _maximo_documentos(None, anio_global, tipos=tipos_dg),
-            _maximo_consecutivo_dg(),
+            _maximo_documentos(tipo, anio_global),
+            _maximo_consecutivo_dg(tipo, anio_global),
         )
 
     if anio_actual == anio_global:
@@ -224,9 +239,14 @@ def registrar_folio_importado(gerencia, tipo, anio, numero, estatus, fecha, asun
     """Registra un folio importado sin crear contadores duplicados."""
     from flask import current_app
 
+    if tipo not in TIPOS_DOCUMENTO:
+        raise ValueError("Tipo de documento no válido")
+    if numero < 0:
+        raise ValueError("El consecutivo no puede ser negativo")
+
     anio_global = current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
-    if tipo.endswith("_dg") and anio == anio_global:
-        _bloquear_contador(f"consecutivo:DG:{anio_global}")
+    if tipo.endswith("_dg"):
+        _bloquear_contador(f"consecutivo:DG:{tipo}:{anio}")
     elif anio == anio_global:
         _bloquear_contador(f"consecutivo:GLOBAL:{tipo}:{anio_global}")
     else:
@@ -235,6 +255,8 @@ def registrar_folio_importado(gerencia, tipo, anio, numero, estatus, fecha, asun
     if tipo.endswith("_dg"):
         db.session.add(
             ConsecutivoDG(
+                tipo=tipo,
+                anio=anio,
                 numero=numero,
                 estatus=estatus,
                 fecha=fecha,
@@ -258,10 +280,16 @@ def establecer_tope_manual(tipo, numero):
     anio_global = current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
 
     if tipo.endswith("_dg") and anio_actual == anio_global:
-        _bloquear_contador(f"consecutivo:DG:{anio_global}")
-        if numero > _maximo_consecutivo_dg():
+        _bloquear_contador(f"consecutivo:DG:{tipo}:{anio_global}")
+        maximo_actual = max(
+            _maximo_documentos(tipo, anio_global),
+            _maximo_consecutivo_dg(tipo, anio_global),
+        )
+        if numero > maximo_actual:
             db.session.add(
                 ConsecutivoDG(
+                    tipo=tipo,
+                    anio=anio_global,
                     numero=numero,
                     estatus="registrado",
                     fecha=datetime.now().date(),
@@ -289,11 +317,13 @@ def generar_numero_documento(gerencia_solicita, tipo):
     anio_global = current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
 
     if tipo.endswith("_dg") and anio_actual == anio_global:
-        _bloquear_contador(f"consecutivo:DG:{anio_global}")
+        _bloquear_contador(f"consecutivo:DG:{tipo}:{anio_global}")
         nuevo_numero = obtener_maximo_folio("DG", tipo) + 1
 
         db.session.add(
             ConsecutivoDG(
+                tipo=tipo,
+                anio=anio_global,
                 numero=nuevo_numero,
                 estatus="registrado",
                 fecha=datetime.now().date(),

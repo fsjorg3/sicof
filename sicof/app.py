@@ -25,6 +25,7 @@ import unicodedata
 
 from sicof.models import (
     establecer_tope_manual,
+    generar_numero_documento,
     obtener_maximo_folio,
     registrar_folio_importado,
 )
@@ -56,8 +57,6 @@ def _clasificacion_por_defecto_id():
 
 def crear_folio_reservado(gerencia, tipo, observaciones):
     """Genera un folio reservado. Devuelve el Documento ya persistido."""
-    from .models import generar_numero_documento
-
     numero_generado, consecutivo_real, anio_real = generar_numero_documento(
         gerencia, tipo
     )
@@ -426,7 +425,11 @@ def registrar_rutas(app):
     @app.route("/consecutivos_dg")
     @requiere_superadmin
     def consecutivos_dg_lista():
-        lista = ConsecutivoDG.query.all()
+        lista = ConsecutivoDG.query.order_by(
+            ConsecutivoDG.anio.desc(),
+            ConsecutivoDG.tipo,
+            ConsecutivoDG.numero.desc(),
+        ).all()
         return render_template("consecutivos_dg.html", consecutivos=lista)
 
 
@@ -760,12 +763,21 @@ def registrar_rutas(app):
 
                     tipo_doc = _tipo_documento_importado(tipo_area, es_dg)
 
+                    if tipo_doc not in TIPOS_DOCUMENTO:
+                        raise ValueError(
+                            f"Tipo documental importado no válido: {tipo_doc}"
+                        )
+
                 else:
                     # ============================
                     # 4. SI NO VIENE CONSECUTIVO → GENERAR UNO NUEVO
                     # ============================
                     tipo_doc = "oficio_dg" if es_dg else "oficio_int"
                     gerencia_generadora = "DG" if es_dg else clave
+                    if tipo_doc not in TIPOS_DOCUMENTO:
+                        raise ValueError(
+                            f"Tipo documental no válido: {tipo_doc}"
+                        )
                     _, numero, anio = generar_numero_documento(
                         gerencia_generadora,
                         tipo_doc,
@@ -882,7 +894,8 @@ def registrar_rutas(app):
 
         if request.method == "POST":
             cons.estatus = request.form["estatus"]
-            cons.fecha = request.form["fecha"]
+            fecha = request.form.get("fecha")
+            cons.fecha = datetime.strptime(fecha, "%Y-%m-%d").date() if fecha else None
             cons.asunto = request.form["asunto"]
 
             db.session.commit()
@@ -922,11 +935,16 @@ def registrar_rutas(app):
 
         # Obtener todos los tipos reales existentes en la BD
         tipos = TIPOS_DOCUMENTO
+        anio_folio = (
+            current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
+            if datetime.now().year == current_app.config["ANIO_CONSECUTIVO_GLOBAL"]
+            else datetime.now().year
+        )
 
         for t in tipos:
             ultimo = (
                 Documento.query
-                .filter_by(tipo=t)
+                .filter_by(tipo=t, anio=anio_folio)
                 .order_by(Documento.consecutivo.desc())
                 .first()
             )
@@ -940,9 +958,6 @@ def registrar_rutas(app):
         if request.method == "POST":
             try:
                 for tipo in tipos:
-                    if tipo.endswith("_dg") and tipo != "oficio_dg":
-                        continue
-
                     nuevo_tope = request.form.get(f"nuevo_consecutivo_{tipo}")
                     if nuevo_tope:
                         establecer_tope_manual(tipo, int(nuevo_tope))

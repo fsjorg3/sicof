@@ -57,15 +57,11 @@
                         {% if folio %}{{ folio.gerencia_solicita }}{% else %}—{% endif %}
                     </td>
                     <td style="padding:8px;">
-                        {% if tipo == "oficio_dg" or not tipo.endswith("_dg") %}
-                            <input type="number"
-                                   name="nuevo_consecutivo_{{ tipo }}"
-                                   value="{{ maximos_folio.get(tipo, 0) }}"
-                                   min="0"
-                                   style="width:100%; padding:6px;">
-                        {% else %}
-                            <span style="color:#666;">Secuencia DG compartida</span>
-                        {% endif %}
+                        <input type="number"
+                               name="nuevo_consecutivo_{{ tipo }}"
+                               value="{{ maximos_folio.get(tipo, 0) }}"
+                               min="0"
+                               style="width:100%; padding:6px;">
                     </td>
                 </tr>
                 {% endfor %}
