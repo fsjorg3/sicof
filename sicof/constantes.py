@@ -4,7 +4,7 @@ Constantes del dominio archivístico de SOAPAP.
 """
 
 # Gerencias que emiten folios.
-GERENCIAS = ["GAL", "GAF", "GSTS", "GSPOI", "GSMA", "DG"]
+GERENCIAS = ["GAL", "GAF", "GSTS", "GPSOI", "GSMA", "DG"]
 
 # Etiquetas visibles de los tipos documentales, agrupadas para los <optgroup>
 
